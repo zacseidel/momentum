@@ -1,0 +1,49 @@
+name: Run Momentum Strategy
+
+on:
+  # Schedule: 11:00 UTC (4am MST) on Tuesday (2) and Friday (5)
+  schedule:
+    - cron: '0 9 * * 2,5'
+  # Allow manual trigger from the Actions tab for testing
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  run-momentum:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Report & Update Site
+        env:
+          POLYGON_API_KEY: ${{ secrets.POLYGON_API_KEY }}
+        run: |
+          python run_report.py
+
+      - name: Commit and Push Changes
+        run: |
+          git config --global user.name "Momentum Bot"
+          git config --global user.email "bot@github.com"
+          
+          # Add all changes (reports, docs, logs, db)
+          git add .
+          
+          # Commit if there are changes
+          git commit -m "📈 Auto-update: Weekly Report & Tracker [skip ci]" || echo "No changes to commit"
+          
+          # Push back to main
+          git push

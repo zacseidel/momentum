@@ -1,0 +1,45 @@
+
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>About This Project</title>
+        <style>
+            body { font-family: -apple-system, system-ui, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; line-height: 1.6; color: #333; }
+            h1 { border-bottom: 2px solid #eee; padding-bottom: 10px; }
+            a { color: #0066cc; text-decoration: none; } 
+            .nav { margin-bottom: 40px; font-size: 0.9em; }
+        </style>
+    </head>
+    <body>
+        <div class="nav">
+            <a href="../index.html">← Back to Dashboard</a>
+        </div>
+        <h1>About This Project</h1>
+        
+    <h2>The Philosophy</h2>
+    <p>This project applies quantitative strategies to the US Stock Market to remove emotion from investing. It currently runs two distinct strategy engines:</p>
+    
+    <h3>1. Momentum Engine</h3>
+    <p>Focuses on <strong>MegaCap</strong>, <strong>S&P 500</strong>, and <strong>MidCap 400</strong> cohorts.</p>
+    <ul>
+        <li><strong>Ranking:</strong> Stocks are ranked by 12-month volatility-adjusted returns.</li>
+        <li><strong>Selection:</strong> Top 5 tickers in each cohort.</li>
+        <li><strong>Exit:</strong> Rank-based. Assets are sold immediately when they drop out of the Top 5.</li>
+    </ul>
+
+    <h3>2. Munger Engine (Mean Reversion)</h3>
+    <p>Focuses on high-quality <strong>Top 50 Market Cap</strong> stocks trading at a discount.</p>
+    <ul>
+        <li><strong>Signal:</strong> Price dips below the 200-day Moving Average (last 10 days) but recovers above the 10-day MA.</li>
+        <li><strong>Selection:</strong> Opportunistic (all valid signals).</li>
+        <li><strong>Exit:</strong> Time-based. Assets are held for a minimum of 1 year to allow for mean reversion.</li>
+    </ul>
+
+    <h3>The Technology</h3>
+    <p>Built with Python, using Polygon.io for data, SQLite for caching, and GitHub Actions for automation.</p>
+    
+    </body>
+    </html>
+    
