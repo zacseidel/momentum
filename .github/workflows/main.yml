@@ -1,9 +1,9 @@
 name: Run Momentum Strategy
 
 on:
-  # Schedule: 11:00 UTC (4am MST) on Tuesday (2) and Friday (5)
+  # Schedule: 11:00 UTC (5am MDT / 4am MST) on Tuesday (2) and Friday (5)
   schedule:
-    - cron: '0 9 * * 2,5'
+    - cron: '0 11 * * 2,5'
   # Allow manual trigger from the Actions tab for testing
   workflow_dispatch:
 

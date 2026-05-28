@@ -39,14 +39,6 @@ def build_website():
                 "date": date_str, "url": f"reports/{f.name}", "display": display_date
             })
 
-    # 3. Performance
-    perf_files = list(REPORTS_DIR.glob("performance_*.html"))
-    has_perf = False
-    if perf_files:
-        latest_perf = sorted(perf_files)[-1]
-        shutil.copy(latest_perf, SITE_DIR / "performance.html")
-        has_perf = True
-
     # 4. Trends
     trend_links = []
     if TRENDS_DIR.exists():
@@ -61,7 +53,7 @@ def build_website():
     # 5. Generate Pages
     # Index
     (SITE_DIR / "index.html").write_text(
-        render_index(report_links, trend_links, has_perf), encoding="utf-8"
+        render_index(report_links, trend_links), encoding="utf-8"
     )
     
     # About (UPDATED FOR MUNGER STRATEGY)
@@ -121,7 +113,7 @@ def render_page_tpl(title, content):
     """
     return Template(tpl).render(title=title, content=content)
 
-def render_index(reports, trends, has_perf):
+def render_index(reports, trends):
     tpl = """
     <!DOCTYPE html>
     <html>
@@ -149,9 +141,7 @@ def render_index(reports, trends, has_perf):
                 <h1>Quantitative Engines</h1>
                 <p style="margin:5px 0 0 0; opacity:0.8;">Weekly Momentum & Mean Reversion Analysis.</p>
             </div>
-            {% if has_perf %}
-            <a href="zacseidel.github.io/eval" class="btn">View Performance 📈</a>
-            {% endif %}
+            <a href="https://zacseidel.github.io/eval" class="btn">View Performance 📈</a>
         </div>
 
         <div class="grid">
@@ -190,9 +180,8 @@ def render_index(reports, trends, has_perf):
     </html>
     """
     return Template(tpl).render(
-        reports=reports, 
-        trends=trends, 
-        has_perf=has_perf,
+        reports=reports,
+        trends=trends,
         date=date.today().strftime("%Y-%m-%d")
     )
 
