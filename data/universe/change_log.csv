@@ -1122,3 +1122,15 @@ date,cohort,action,symbol
 2026-05-19,megacap,drop,LRCX
 2026-05-19,munger,add,PEP
 2026-05-19,munger,drop,SNDK
+2026-06-02,sp500,add,FDXF
+2026-06-02,sp500,add,BNY
+2026-06-02,sp500,drop,BK
+2026-06-02,sp500,drop,EPAM
+2026-06-02,megacap,add,LRCX
+2026-06-02,megacap,add,ORCL
+2026-06-02,megacap,drop,NFLX
+2026-06-02,megacap,drop,CVX
+2026-06-02,munger,add,PANW
+2026-06-02,munger,add,SNDK
+2026-06-02,munger,drop,ADI
+2026-06-02,munger,drop,PEP
