@@ -1,401 +1,402 @@
 symbol,name,weight
-FLEX,Flex Ltd,1.521608
-TWLO,Twilio Inc. Class A,0.849388
-CASH_USD,U.S. Dollar,0.782163
-CW,Curtiss-Wright Corporation,0.77975
-CRS,Carpenter Technology Corporation,0.77858
-FTI,TechnipFMC plc,0.768617
-NVT,nVent Electric plc,0.75631
-STRL,Sterling Infrastructure Inc.,0.738391
-ATI,ATI Inc,0.737817
-XPO,XPO Inc.,0.717182
-ILMN,Illumina Inc.,0.70771
-MKSI,MKS Inc.,0.699177
-MTSI,MACOM Technology Solutions Holdings Inc.,0.688403
-ENTG,Entegris Inc.,0.686684
-WWD,Woodward Inc.,0.66547
-UTHR,United Therapeutics Corporation,0.656241
-P,Everpure Inc. Class A,0.649829
-MTZ,MasTec Inc.,0.632572
-FN,Fabrinet,0.631482
-TTMI,TTM Technologies Inc.,0.592248
-SNX,TD SYNNEX Corporation,0.591952
-RS,Reliance Inc.,0.588641
-BURL,Burlington Stores Inc.,0.580474
-USFD,US Foods Holding Corp.,0.571528
-RBA,RB Global Inc.,0.568617
-LSCC,Lattice Semiconductor Corporation,0.565142
-OKTA,Okta Inc. Class A,0.555138
-RBC,RBC Bearings Incorporated,0.541021
-NXT,Nextpower Inc. Class A,0.518144
-EWBC,East West Bancorp Inc.,0.501099
-BWXT,BWX Technologies Inc.,0.491754
-TLN,Talen Energy Corp,0.489374
-RGLD,Royal Gold Inc.,0.484291
-WCC,WESCO International Inc.,0.469204
-ITT,ITT Inc.,0.465531
-ONTO,Onto Innovation Inc.,0.462642
-AA,Alcoa Corporation,0.460805
-WPC,W. P. Carey Inc.,0.458691
-SITM,SiTime Corporation,0.454914
-PFGC,Performance Food Group Co,0.453561
-NBIX,Neurocrine Biosciences Inc.,0.443998
-APG,APi Group Corporation,0.443334
-NLY,Annaly Capital Management Inc.,0.443105
-THC,Tenet Healthcare Corporation,0.436558
-SGI,Somnigroup International Inc.,0.432313
-RMBS,Rambus Inc.,0.427806
-MLI,Mueller Industries Inc.,0.424111
-BWA,BorgWarner Inc.,0.422175
-OVV,Ovintiv Inc,0.418236
-LECO,Lincoln Electric Holdings Inc.,0.408778
-DKS,Dick's Sporting Goods Inc.,0.405192
-RRX,Regal Rexnord Corporation,0.403012
-PNFP,Pinnacle Financial Partners Inc.,0.401147
-CSL,Carlisle Companies Incorporated,0.399953
-DOCN,DigitalOcean Holdings Inc.,0.399565
-DTM,DT Midstream Inc.,0.396725
-CLH,Clean Harbors Inc.,0.395648
-ARMK,Aramark,0.395093
-EVR,Evercore Inc. Class A,0.392103
-DY,Dycom Industries Inc.,0.391702
-TOL,Toll Brothers Inc.,0.390787
-JLL,Jones Lang LaSalle Incorporated,0.390355
-JAZZ,Jazz Pharmaceuticals Public Limited Company,0.388606
-UNM,Unum Group,0.388209
-PR,Permian Resources Corporation Class A,0.388076
-AEIS,Advanced Energy Industries Inc.,0.388026
-RPM,RPM International Inc.,0.386646
-RGA,Reinsurance Group of America Incorporated,0.383442
-EXEL,Exelixis Inc.,0.381749
-SOLS,Solstice Advanced Materials Inc.,0.381536
-ROIV,Roivant Sciences Ltd.,0.375528
-WSO,Watsco Inc.,0.372724
-LAMR,Lamar Advertising Company Class A,0.372146
-OHI,Omega Healthcare Investors Inc.,0.370603
-NTNX,Nutanix Inc. Class A,0.370463
-GLPI,Gaming and Leisure Properties Inc.,0.366863
-TRU,TransUnion,0.359168
-RNR,RenaissanceRe Holdings Ltd.,0.358663
-KNX,Knight-Swift Transportation Holdings Inc. Class A,0.356813
-EQH,Equitable Holdings Inc.,0.35514
-ALLY,Ally Financial Inc,0.353783
-SAIA,Saia Inc.,0.350392
-PINS,Pinterest Inc. Class A,0.346339
-PEN,Penumbra Inc.,0.346219
-GGG,Graco Inc.,0.345549
-ELS,Equity LifeStyle Properties Inc.,0.345238
-DT,Dynatrace Inc.,0.340712
-FNF,Fidelity National Financial Inc. - FNF Group,0.339965
-ELAN,Elanco Animal Health Inc.,0.334717
-CG,Carlyle Group Inc,0.332784
-FHN,First Horizon Corporation,0.332644
-WBS,Webster Financial Corporation,0.332606
-NYT,New York Times Company Class A,0.330696
-LFUS,Littelfuse Inc.,0.329378
-SPXC,SPX Technologies Inc.,0.327654
-BJ,BJ's Wholesale Club Holdings Inc.,0.327365
-AIT,Applied Industrial Technologies Inc.,0.32711
-ARW,Arrow Electronics Inc.,0.324835
-BLD,TopBuild Corp.,0.318955
-MOG.A,Moog Inc. Class A,0.313839
-CCK,Crown Holdings Inc.,0.311119
-CACI,CACI International Inc Class A,0.310904
-HL,Hecla Mining Company,0.30962
-SF,Stifel Financial Corp,0.309502
-TXRH,Texas Roadhouse Inc.,0.307353
-R,Ryder System Inc.,0.303149
-CGNX,Cognex Corporation,0.302861
-EGP,EastGroup Properties Inc.,0.302212
-ARWR,Arrowhead Pharmaceuticals Inc.,0.299628
-FIVE,Five Below Inc.,0.296648
-BMRN,BioMarin Pharmaceutical Inc.,0.296512
-VMI,Valmont Industries Inc.,0.295367
-AMH,American Homes 4 Rent Class A,0.294942
-WTRG,Essential Utilities Inc.,0.294774
-KTOS,Kratos Defense & Security Solutions Inc.,0.291948
-DINO,HF Sinclair Corporation,0.291625
-WTFC,Wintrust Financial Corporation,0.29107
-COKE,Coca-Cola Consolidated Inc.,0.290913
-MEDP,Medpace Holdings Inc.,0.290675
-SCI,Service Corporation International,0.285581
-JEF,Jefferies Financial Group Inc.,0.284096
-AAL,American Airlines Group Inc.,0.283116
-GWRE,Guidewire Software Inc.,0.283016
-FLS,Flowserve Corporation,0.281813
-OC,Owens Corning,0.281296
-CR,Crane Company,0.280479
-EHC,Encompass Health Corporation,0.277266
-AR,Antero Resources Corporation,0.276624
-DCI,Donaldson Company Inc.,0.276467
-AMG,Affiliated Managers Group Inc.,0.275332
-MUSA,Murphy USA Inc.,0.274979
-OGE,OGE Energy Corp.,0.273132
-BRX,Brixmor Property Group Inc.,0.272352
-WMS,Advanced Drainage Systems Inc.,0.271878
-ZION,Zions Bancorporation NA,0.271381
-AMKR,Amkor Technology Inc.,0.269574
-SSB,SouthState Bank Corporation,0.268354
-UMBF,UMB Financial Corporation,0.26582
-CNH,CNH Industrial NV,0.261876
-CYTK,Cytokinetics Incorporated,0.261558
-CUBE,CubeSmart,0.261322
-SN,SharkNinja Inc.,0.260521
-GTLS,Chart Industries Inc.,0.257693
-AFG,American Financial Group Inc.,0.256883
-AYI,Acuity Inc.,0.25558
-CFR,Cullen/Frost Bankers Inc.,0.254236
-COLB,Columbia Banking System Inc.,0.253582
-WTS,Watts Water Technologies Inc. Class A,0.25352
-ACM,AECOM,0.249533
-BAH,Booz Allen Hamilton Holding Corporation Class A,0.24934
-CNM,Core & Main Inc. Class A,0.249302
-GME,GameStop Corp. Class A,0.248513
-PRI,Primerica Inc.,0.248396
-CAVA,CAVA Group Inc.,0.247653
-ADC,Agree Realty Corporation,0.247504
-AAON,AAON Inc.,0.246341
-DAR,Darling Ingredients Inc,0.246205
-RRC,Range Resources Corporation,0.24616
-DOCU,DocuSign Inc.,0.245476
-TKR,Timken Company,0.244574
-ORI,Old Republic International Corporation,0.24346
-NNN,NNN REIT Inc.,0.241949
-ENSG,Ensign Group Inc.,0.241079
-FCFS,FirstCash Holdings Inc.,0.240226
-TTC,Toro Company,0.240186
-ALV,Autoliv Inc.,0.23978
-OSK,Oshkosh Corp,0.239725
-GMED,Globus Medical Inc Class A,0.238904
-MANH,Manhattan Associates Inc.,0.238838
-ONB,Old National Bancorp,0.238145
-VOYA,Voya Financial Inc.,0.237683
-CMC,Commercial Metals Company,0.23694
-ENS,EnerSys,0.236515
-CRUS,Cirrus Logic Inc.,0.234747
-BROS,Dutch Bros Inc. Class A,0.234323
-ORA,Ormat Technologies Inc.,0.233829
-WAL,Western Alliance Bancorp,0.233009
-FR,First Industrial Realty Trust Inc.,0.23291
-HALO,Halozyme Therapeutics Inc.,0.232474
-SEIC,SEI Investments Company,0.230771
-SFM,Sprouts Farmers Market Inc.,0.230588
-CTRE,CareTrust REIT Inc.,0.229497
-AHR,American Healthcare REIT Inc.,0.22865
-H,Hyatt Hotels Corporation Class A,0.22808
-FLR,Fluor Corporation,0.225614
-VNOM,Viper Energy Inc.,0.22516
-SSD,Simpson Manufacturing Co. Inc.,0.222658
-REXR,Rexford Industrial Realty Inc.,0.222197
-MP,MP Materials Corp Class A,0.217641
-CLF,Cleveland-Cliffs Inc,0.215617
-CART,Maplebear Inc.,0.214981
-IDA,IDACORP Inc.,0.214256
-KEX,Kirby Corporation,0.213452
-ATR,AptarGroup Inc.,0.210839
-HLI,Houlihan Lokey Inc. Class A,0.210789
-MIDD,Middleby Corporation,0.210159
-CRBG,Corebridge Financial Inc.,0.208587
-AVT,Avnet Inc.,0.208377
-CBSH,Commerce Bancshares Inc.,0.207975
-ULS,UL Solutions Inc. Class A,0.207818
-ST,Sensata Technologies Holding PLC,0.207548
-HXL,Hexcel Corporation,0.207536
-LAD,Lithia Motors Inc.,0.207491
-LSTR,Landstar System Inc.,0.207125
-HQY,HealthEquity Inc,0.20607
-TEX,Terex Corporation,0.205881
-IDCC,InterDigital Inc.,0.205789
-NOV,NOV Inc.,0.205108
-UGI,UGI Corporation,0.204538
-STAG,STAG Industrial Inc.,0.204086
-LEA,Lear Corporation,0.2032
-VICR,Vicor Corporation,0.20315
-TTEK,Tetra Tech Inc.,0.202532
-NFG,National Fuel Gas Company,0.202504
-SLAB,Silicon Laboratories Inc.,0.201379
-CHRD,Chord Energy Corporation,0.201238
-AXTA,Axalta Coating Systems Ltd.,0.199868
-PB,Prosperity Bancshares Inc.(R),0.199414
-WFRD,Weatherford International plc,0.199103
-HR,Healthcare Realty Trust Incorporated Class A,0.198435
-AM,Antero Midstream Corp.,0.195901
-TMHC,Taylor Morrison Home Corporation,0.195009
-THG,Hanover Insurance Group Inc.,0.194657
-LNTH,Lantheus Holdings Inc,0.192501
-RGEN,Repligen Corporation,0.192056
-KNSL,Kinsale Capital Group Inc.,0.19113
-EXP,Eagle Materials Inc.,0.190004
-VLY,Valley National Bancorp,0.189715
-ALGM,Allegro MicroSystems Inc.,0.189369
-AGCO,AGCO Corporation,0.187564
-FAF,First American Financial Corporation,0.187428
-AVTR,Avantor Inc.,0.183677
-M,Macy's Inc.,0.181992
-FNB,F.N.B. Corporation,0.181245
-INGR,Ingredion Incorporated,0.177365
-JHG,Janus Henderson Group PLC,0.177215
-NEU,NewMarket Corporation,0.176339
-GBCI,Glacier Bancorp Inc.,0.176041
-CROX,Crocs Inc.,0.175919
-HIMS,Hims & Hers Health Inc. Class A,0.174298
-BRKR,Bruker Corporation,0.174206
-GATX,GATX Corporation,0.174114
-UBSI,United Bankshares Inc.,0.173622
-KRG,Kite Realty Group Trust,0.173113
-WH,Wyndham Hotels & Resorts Inc.,0.170461
-VNO,Vornado Realty Trust,0.170256
-CHDN,Churchill Downs Incorporated,0.169576
-MTDR,Matador Resources Company,0.166457
-CHE,Chemed Corporation,0.16637
-RYN,Rayonier Inc.,0.166159
-MSA,MSA Safety Inc.,0.16424
-VFC,V.F. Corporation,0.163798
-HWC,Hancock Whitney Corporation,0.162412
-STWD,Starwood Property Trust Inc.,0.16239
-GXO,GXO Logistics Inc,0.159809
-FND,Floor & Decor Holdings Inc. Class A,0.158777
-GNTX,Gentex Corporation,0.158119
-SWX,Southwest Gas Holdings Inc.,0.157544
-POR,Portland General Electric Company,0.157422
-MTG,MGIC Investment Corporation,0.157211
-ALK,Alaska Air Group Inc.,0.15605
-NOVT,Novanta Inc,0.155406
-CVLT,Commvault Systems Inc.,0.155304
-TXNM,TXNM Energy Inc.,0.155102
-VAL,Valaris Ltd.,0.154766
-BKH,Black Hills Corporation,0.154478
-ESNT,Essent Group Ltd.,0.154079
-SIGI,Selective Insurance Group Inc.,0.153753
-ESAB,ESAB Corporation,0.153081
-NJR,New Jersey Resources Corporation,0.152597
-ACI,Albertsons Companies Inc. Class A,0.152495
-AVAV,AeroVironment Inc.,0.151704
-SYNA,Synaptics Incorporated,0.15062
-BC,Brunswick Corporation,0.148144
-OZK,Bank OZK,0.147135
-BIO,Bio-Rad Laboratories Inc. Class A,0.145874
-MSM,MSC Industrial Direct Co. Inc. Class A,0.144946
-OLLI,Ollie's Bargain Outlet Holdings Inc,0.144588
-FBIN,Fortune Brands Innovations Inc.,0.143304
-SARO,StandardAero Inc.,0.141913
-HOMB,Home BancShares Inc.,0.1412
-DUOL,Duolingo Inc. Class A,0.141009
-BYD,Boyd Gaming Corporation,0.140564
-AN,AutoNation Inc.,0.139629
-GAP,Gap Inc.,0.139055
-TREX,Trex Company Inc.,0.137934
-SON,Sonoco Products Company,0.13773
-SAIC,Science Applications International Corp.,0.136902
-UFPI,UFP Industries Inc.,0.136771
-RLI,RLI Corp.,0.136494
-NXST,Nexstar Media Group Inc.,0.136212
-G,Genpact Limited,0.136202
-LPX,Louisiana-Pacific Corporation,0.135745
-MUR,Murphy Oil Corporation,0.135637
-VVV,Valvoline Inc.,0.134671
-CUZ,Cousins Properties Incorporated,0.133662
-MTN,Vail Resorts Inc.,0.133354
-TNL,Travel + Leisure Co.,0.132601
-ASB,Associated Banc-Corp,0.132584
-CNO,CNO Financial Group Inc.,0.132116
-DBX,Dropbox Inc. Class A,0.131724
-FCN,FTI Consulting Inc.,0.131437
-CNX,CNX Resources Corporation,0.130142
-SBRA,Sabra Health Care REIT Inc.,0.129931
-PCTY,Paylocity Holding Corp.,0.129419
-CBT,Cabot Corporation,0.129208
-SR,Spire Inc.,0.129056
-OGS,ONE Gas Inc.,0.128758
-PATH,UiPath Inc. Class A,0.128143
-WING,Wingstop Inc.,0.128088
-CHWY,Chewy Inc. Class A,0.127937
-CELH,Celsius Holdings Inc.,0.127394
-HRB,H&R Block Inc.,0.127262
-KNF,Knife River Corporation,0.12701
-BSY,Bentley Systems Incorporated Class B,0.126104
-WEX,WEX Inc.,0.125207
-FLG,Flagstar Bank National Association,0.12518
-BDC,Belden Inc.,0.125093
-EXLS,ExlService Holdings Inc.,0.123821
-MAT,Mattel Inc.,0.123694
-TCBI,Texas Capital Bancshares Inc.,0.123417
-EPR,EPR Properties,0.123235
-KBR,KBR Inc.,0.122636
-SLM,SLM Corp,0.1211
-LIVN,LivaNova Plc,0.120701
-NWE,NorthWestern Energy Group Inc.,0.120596
-FFIN,First Financial Bankshares Inc,0.120542
-FHI,Federated Hermes Inc. Class B,0.119308
-SHC,Sotera Health Company,0.118927
-WMG,Warner Music Group Corp. Class A,0.116124
-KRC,Kilroy Realty Corporation,0.116019
-VNT,Vontier Corp,0.116007
-ANF,Abercrombie & Fitch Co. Class A,0.115865
-BCO,Brink's Company,0.115858
-PLNT,Planet Fitness Inc. Class A,0.115029
-QLYS,Qualys Inc.,0.114022
-OLED,Universal Display Corporation,0.114004
-IBOC,International Bancshares Corporation,0.112633
-NVST,Envista Holdings Corp.,0.112169
-RYAN,Ryan Specialty Holdings Inc. Class A,0.111785
-THO,Thor Industries Inc.,0.111346
-BBWI,Bath & Body Works Inc.,0.110491
-MORN,Morningstar Inc.,0.11024
-LOPE,Grand Canyon Education Inc.,0.109644
-IRT,Independence Realty Trust Inc.,0.108977
-POST,Post Holdings Inc.,0.108101
-YETI,YETI Holdings Inc.,0.10764
-APPF,AppFolio Inc Class A,0.10678
-GHC,Graham Holdings Co. Class B,0.106468
-CDP,COPT Defense Properties,0.105932
-PVH,PVH Corp.,0.105768
-ELF,e.l.f. Beauty Inc.,0.104801
-PII,Polaris Inc.,0.103905
-BHF,Brighthouse Financial Inc.,0.099805
-HAE,Haemonetics Corporation,0.099125
-SLGN,Silgan Holdings Inc.,0.099094
-AVNT,Avient Corporation,0.095331
-OPCH,Option Care Health Inc,0.093461
-KBH,KB Home,0.093264
-HLNE,Hamilton Lane Incorporated Class A,0.092921
-MMS,MAXIMUS Inc.,0.092558
-PAG,Penske Automotive Group Inc.,0.092094
-HGV,Hilton Grand Vacations Inc.,0.091455
-PBF,PBF Energy Inc. Class A,0.091315
-DLB,Dolby Laboratories Inc. Class A,0.09024
-GPK,Graphic Packaging Holding Company,0.089791
-CAR,Avis Budget Group Inc.,0.089064
-VC,Visteon Corporation,0.088457
-NSA,National Storage Affiliates Trust,0.088162
-HOG,Harley-Davidson Inc.,0.085421
-IPGP,IPG Photonics Corporation,0.084126
-ASH,Ashland Inc.,0.083051
-PEGA,Pegasystems Inc.,0.082837
-BILL,BILL Holdings Inc.,0.081925
-PSN,Parsons Corporation,0.081436
-WLK,Westlake Corporation,0.080883
-PK,Park Hotels & Resorts Inc.,0.079833
-OLN,Olin Corporation,0.079711
-EXPO,Exponent Inc.,0.079193
-SMG,Scotts Miracle-Gro Company Class A,0.078297
-DOCS,Doximity Inc. Class A,0.076748
-FOUR,Shift4 Payments Inc. Class A,0.074842
-WHR,Whirlpool Corporation,0.073609
-KD,Kyndryl Holdings Incorporation,0.073342
-EEFT,Euronet Worldwide Inc.,0.07255
-CPRI,Capri Holdings Limited,0.069601
-CHH,Choice Hotels International Inc.,0.064203
-RH,RH,0.063259
-MZTI,Marzetti Company,0.061171
-CXT,Crane NXT Co.,0.058235
-XRAY,DENTSPLY SIRONA Inc.,0.056119
-GT,Goodyear Tire & Rubber Company,0.052317
-GEF,Greif Inc Class A,0.047615
-COLM,Columbia Sportswear Company,0.046975
-SAM,Boston Beer Company Inc. Class A,0.038965
-PPC,Pilgrim's Pride Corporation,0.034438
-CNXC,Concentrix Corporation,0.031767
-BRBR,BellRing Brands Inc.,0.028816
-BLKB,Blackbaud Inc.,0.027409
-COTY,Coty Inc. Class A,0.021014
+FLEX,Flex Ltd,1.50961
+CRS,Carpenter Technology Corporation,0.812558
+NVT,nVent Electric plc,0.794531
+CW,Curtiss-Wright Corporation,0.791606
+CASH_USD,U.S. Dollar,0.786673
+TWLO,Twilio Inc. Class A,0.785125
+ATI,ATI Inc,0.760882
+MKSI,MKS Inc.,0.759247
+ENTG,Entegris Inc.,0.755843
+STRL,Sterling Infrastructure Inc.,0.73646
+FTI,TechnipFMC plc,0.733293
+WWD,Woodward Inc.,0.713153
+MTSI,MACOM Technology Solutions Holdings Inc.,0.702345
+ILMN,Illumina Inc.,0.688696
+P,Everpure Inc. Class A,0.650952
+XPO,XPO Inc.,0.65008
+MTZ,MasTec Inc.,0.647755
+UTHR,United Therapeutics Corporation,0.642615
+TTMI,TTM Technologies Inc.,0.6221
+SNX,TD SYNNEX Corporation,0.593504
+LSCC,Lattice Semiconductor Corporation,0.584877
+BURL,Burlington Stores Inc.,0.582786
+RS,Reliance Inc.,0.57644
+FN,Fabrinet,0.571744
+RBA,RB Global Inc.,0.571115
+USFD,US Foods Holding Corp.,0.563821
+RBC,RBC Bearings Incorporated,0.562164
+OKTA,Okta Inc. Class A,0.555306
+TLN,Talen Energy Corp,0.554458
+BWXT,BWX Technologies Inc.,0.52234
+NXT,Nextpower Inc. Class A,0.519955
+WCC,WESCO International Inc.,0.494351
+EWBC,East West Bancorp Inc.,0.485312
+RGLD,Royal Gold Inc.,0.484139
+ITT,ITT Inc.,0.470801
+ONTO,Onto Innovation Inc.,0.460967
+APG,APi Group Corporation,0.454029
+PFGC,Performance Food Group Co,0.452795
+SITM,SiTime Corporation,0.448003
+NLY,Annaly Capital Management Inc.,0.443807
+NBIX,Neurocrine Biosciences Inc.,0.441897
+SGI,Somnigroup International Inc.,0.438487
+WPC,W. P. Carey Inc.,0.434132
+DKS,Dick's Sporting Goods Inc.,0.43024
+AA,Alcoa Corporation,0.427656
+MLI,Mueller Industries Inc.,0.424243
+RMBS,Rambus Inc.,0.422716
+THC,Tenet Healthcare Corporation,0.421851
+LECO,Lincoln Electric Holdings Inc.,0.421263
+RRX,Regal Rexnord Corporation,0.418839
+BWA,BorgWarner Inc.,0.413739
+TOL,Toll Brothers Inc.,0.410278
+CSL,Carlisle Companies Incorporated,0.409529
+DTM,DT Midstream Inc.,0.405274
+OVV,Ovintiv Inc,0.404789
+CLH,Clean Harbors Inc.,0.403197
+PNFP,Pinnacle Financial Partners Inc.,0.402493
+EVR,Evercore Inc. Class A,0.399918
+ROIV,Roivant Sciences Ltd.,0.394189
+AEIS,Advanced Energy Industries Inc.,0.391189
+JLL,Jones Lang LaSalle Incorporated,0.39025
+ARMK,Aramark,0.389892
+WSO,Watsco Inc.,0.389587
+RGA,Reinsurance Group of America Incorporated,0.384844
+RPM,RPM International Inc.,0.384755
+DOCN,DigitalOcean Holdings Inc.,0.38301
+UNM,Unum Group,0.381548
+DY,Dycom Industries Inc.,0.380643
+JAZZ,Jazz Pharmaceuticals Public Limited Company,0.379727
+PR,Permian Resources Corporation Class A,0.379537
+SOLS,Solstice Advanced Materials Inc.,0.377843
+EXEL,Exelixis Inc.,0.374996
+OHI,Omega Healthcare Investors Inc.,0.366101
+RNR,RenaissanceRe Holdings Ltd.,0.361877
+LAMR,Lamar Advertising Company Class A,0.361568
+EQH,Equitable Holdings Inc.,0.356892
+ALLY,Ally Financial Inc,0.355213
+NTNX,Nutanix Inc. Class A,0.352748
+GLPI,Gaming and Leisure Properties Inc.,0.351015
+AIT,Applied Industrial Technologies Inc.,0.350666
+GGG,Graco Inc.,0.350622
+PEN,Penumbra Inc.,0.346134
+TRU,TransUnion,0.34572
+DT,Dynatrace Inc.,0.343621
+WBS,Webster Financial Corporation,0.339144
+SPXC,SPX Technologies Inc.,0.336812
+ELS,Equity LifeStyle Properties Inc.,0.335306
+KNX,Knight-Swift Transportation Holdings Inc. Class A,0.334832
+ELAN,Elanco Animal Health Inc.,0.334733
+FHN,First Horizon Corporation,0.3347
+LFUS,Littelfuse Inc.,0.332362
+FNF,Fidelity National Financial Inc. - FNF Group,0.332167
+BLD,TopBuild Corp.,0.331128
+ARW,Arrow Electronics Inc.,0.330666
+PINS,Pinterest Inc. Class A,0.330095
+NYT,New York Times Company Class A,0.328343
+TXRH,Texas Roadhouse Inc.,0.327043
+MOG.A,Moog Inc. Class A,0.32355
+CG,Carlyle Group Inc,0.323367
+SAIA,Saia Inc.,0.322467
+ARWR,Arrowhead Pharmaceuticals Inc.,0.318699
+CCK,Crown Holdings Inc.,0.316584
+VMI,Valmont Industries Inc.,0.312511
+SF,Stifel Financial Corp,0.31194
+BJ,BJ's Wholesale Club Holdings Inc.,0.310164
+CGNX,Cognex Corporation,0.304673
+FIVE,Five Below Inc.,0.297735
+HL,Hecla Mining Company,0.297482
+EGP,EastGroup Properties Inc.,0.296168
+AAL,American Airlines Group Inc.,0.293682
+WMS,Advanced Drainage Systems Inc.,0.293269
+OC,Owens Corning,0.29296
+CR,Crane Company,0.292647
+BMRN,BioMarin Pharmaceutical Inc.,0.292254
+CYTK,Cytokinetics Incorporated,0.289521
+WTRG,Essential Utilities Inc.,0.288871
+R,Ryder System Inc.,0.288838
+FLS,Flowserve Corporation,0.288683
+AMH,American Homes 4 Rent Class A,0.287555
+WTFC,Wintrust Financial Corporation,0.287101
+MEDP,Medpace Holdings Inc.,0.28697
+CACI,CACI International Inc Class A,0.286542
+AMKR,Amkor Technology Inc.,0.286251
+COKE,Coca-Cola Consolidated Inc.,0.285647
+JEF,Jefferies Financial Group Inc.,0.28562
+SCI,Service Corporation International,0.281231
+DINO,HF Sinclair Corporation,0.280522
+KTOS,Kratos Defense & Security Solutions Inc.,0.278376
+SN,SharkNinja Inc.,0.2765
+AMG,Affiliated Managers Group Inc.,0.27612
+DCI,Donaldson Company Inc.,0.274359
+EHC,Encompass Health Corporation,0.274359
+ZION,Zions Bancorporation NA,0.271767
+AR,Antero Resources Corporation,0.270833
+OGE,OGE Energy Corp.,0.270334
+AYI,Acuity Inc.,0.269111
+SSB,SouthState Bank Corporation,0.266192
+UMBF,UMB Financial Corporation,0.264276
+BRX,Brixmor Property Group Inc.,0.2636
+WTS,Watts Water Technologies Inc. Class A,0.262357
+GTLS,Chart Industries Inc.,0.260074
+MUSA,Murphy USA Inc.,0.259067
+CUBE,CubeSmart,0.25765
+CNH,CNH Industrial NV,0.257476
+AAON,AAON Inc.,0.25734
+CFR,Cullen/Frost Bankers Inc.,0.256073
+AFG,American Financial Group Inc.,0.255906
+CNM,Core & Main Inc. Class A,0.255129
+GWRE,Guidewire Software Inc.,0.255067
+TTC,Toro Company,0.251114
+COLB,Columbia Banking System Inc.,0.25104
+TKR,Timken Company,0.251005
+PRI,Primerica Inc.,0.250133
+BROS,Dutch Bros Inc. Class A,0.249888
+ACM,AECOM,0.247461
+CAVA,CAVA Group Inc.,0.247437
+GME,GameStop Corp. Class A,0.246721
+ENSG,Ensign Group Inc.,0.246506
+GMED,Globus Medical Inc Class A,0.245523
+OSK,Oshkosh Corp,0.245515
+ORI,Old Republic International Corporation,0.244999
+FCFS,FirstCash Holdings Inc.,0.244456
+ADC,Agree Realty Corporation,0.244165
+DOCU,DocuSign Inc.,0.242158
+FLR,Fluor Corporation,0.240578
+RRC,Range Resources Corporation,0.239831
+ONB,Old National Bancorp,0.239231
+NNN,NNN REIT Inc.,0.237746
+DAR,Darling Ingredients Inc,0.236192
+VOYA,Voya Financial Inc.,0.235845
+CRUS,Cirrus Logic Inc.,0.234515
+ENS,EnerSys,0.233657
+H,Hyatt Hotels Corporation Class A,0.232362
+SEIC,SEI Investments Company,0.231112
+SSD,Simpson Manufacturing Co. Inc.,0.230807
+CTRE,CareTrust REIT Inc.,0.230295
+AHR,American Healthcare REIT Inc.,0.229569
+WAL,Western Alliance Bancorp,0.228267
+MP,MP Materials Corp Class A,0.228097
+FR,First Industrial Realty Trust Inc.,0.227807
+CART,Maplebear Inc.,0.227727
+ALV,Autoliv Inc.,0.22605
+HALO,Halozyme Therapeutics Inc.,0.224228
+VNOM,Viper Energy Inc.,0.22334
+CMC,Commercial Metals Company,0.223229
+BAH,Booz Allen Hamilton Holding Corporation Class A,0.2226
+MIDD,Middleby Corporation,0.222045
+MANH,Manhattan Associates Inc.,0.220211
+SFM,Sprouts Farmers Market Inc.,0.217993
+ORA,Ormat Technologies Inc.,0.215869
+ATR,AptarGroup Inc.,0.215468
+IDA,IDACORP Inc.,0.214027
+HLI,Houlihan Lokey Inc. Class A,0.21283
+REXR,Rexford Industrial Realty Inc.,0.212091
+KEX,Kirby Corporation,0.21203
+IDCC,InterDigital Inc.,0.211521
+TEX,Terex Corporation,0.211324
+VICR,Vicor Corporation,0.209409
+CBSH,Commerce Bancshares Inc.,0.208623
+AVT,Avnet Inc.,0.208285
+CRBG,Corebridge Financial Inc.,0.207211
+AXTA,Axalta Coating Systems Ltd.,0.206451
+HXL,Hexcel Corporation,0.206037
+HIMS,Hims & Hers Health Inc. Class A,0.205519
+ST,Sensata Technologies Holding PLC,0.20516
+ALGM,Allegro MicroSystems Inc.,0.203739
+HQY,HealthEquity Inc,0.202493
+UGI,UGI Corporation,0.201855
+SLAB,Silicon Laboratories Inc.,0.201427
+STAG,STAG Industrial Inc.,0.20086
+NFG,National Fuel Gas Company,0.200589
+PB,Prosperity Bancshares Inc.(R),0.200085
+AM,Antero Midstream Corp.,0.199976
+LAD,Lithia Motors Inc.,0.198885
+TTEK,Tetra Tech Inc.,0.198484
+LEA,Lear Corporation,0.197178
+LSTR,Landstar System Inc.,0.196487
+EXP,Eagle Materials Inc.,0.196351
+ULS,UL Solutions Inc. Class A,0.196287
+THG,Hanover Insurance Group Inc.,0.194897
+CLF,Cleveland-Cliffs Inc,0.194831
+CHRD,Chord Energy Corporation,0.194744
+TMHC,Taylor Morrison Home Corporation,0.194576
+FAF,First American Financial Corporation,0.194527
+RGEN,Repligen Corporation,0.194313
+HR,Healthcare Realty Trust Incorporated Class A,0.192032
+LNTH,Lantheus Holdings Inc,0.191572
+AGCO,AGCO Corporation,0.189988
+KNSL,Kinsale Capital Group Inc.,0.18986
+VLY,Valley National Bancorp,0.187609
+NOV,NOV Inc.,0.187065
+WFRD,Weatherford International plc,0.182792
+AVTR,Avantor Inc.,0.18175
+FNB,F.N.B. Corporation,0.181181
+M,Macy's Inc.,0.178532
+JHG,Janus Henderson Group PLC,0.177872
+WH,Wyndham Hotels & Resorts Inc.,0.176951
+BRKR,Bruker Corporation,0.176569
+GATX,GATX Corporation,0.175935
+CROX,Crocs Inc.,0.174732
+GBCI,Glacier Bancorp Inc.,0.173337
+UBSI,United Bankshares Inc.,0.172424
+CHE,Chemed Corporation,0.171888
+INGR,Ingredion Incorporated,0.171613
+NEU,NewMarket Corporation,0.169274
+ESAB,ESAB Corporation,0.168581
+VNO,Vornado Realty Trust,0.168439
+KRG,Kite Realty Group Trust,0.168081
+MSA,MSA Safety Inc.,0.166656
+CHDN,Churchill Downs Incorporated,0.162648
+RYN,Rayonier Inc.,0.162314
+STWD,Starwood Property Trust Inc.,0.161705
+MTDR,Matador Resources Company,0.161032
+HWC,Hancock Whitney Corporation,0.160716
+CVLT,Commvault Systems Inc.,0.15905
+MTG,MGIC Investment Corporation,0.159015
+FND,Floor & Decor Holdings Inc. Class A,0.158944
+VFC,V.F. Corporation,0.158428
+SWX,Southwest Gas Holdings Inc.,0.158114
+GNTX,Gentex Corporation,0.158036
+ALK,Alaska Air Group Inc.,0.157082
+POR,Portland General Electric Company,0.157008
+TXNM,TXNM Energy Inc.,0.155584
+ESNT,Essent Group Ltd.,0.155196
+GXO,GXO Logistics Inc,0.154927
+NJR,New Jersey Resources Corporation,0.154589
+NOVT,Novanta Inc,0.15454
+SIGI,Selective Insurance Group Inc.,0.154272
+BKH,Black Hills Corporation,0.152726
+SYNA,Synaptics Incorporated,0.151771
+BC,Brunswick Corporation,0.151184
+MSM,MSC Industrial Direct Co. Inc. Class A,0.15083
+AVAV,AeroVironment Inc.,0.15008
+SARO,StandardAero Inc.,0.146392
+MTN,Vail Resorts Inc.,0.144076
+SIRI,SiriusXM Holdings Inc.,0.143818
+BIO,Bio-Rad Laboratories Inc. Class A,0.142843
+OZK,Bank OZK,0.142171
+FBIN,Fortune Brands Innovations Inc.,0.141687
+HOMB,Home BancShares Inc.,0.140698
+VAL,Valaris Ltd.,0.140696
+TREX,Trex Company Inc.,0.140607
+UFPI,UFP Industries Inc.,0.1403
+DUOL,Duolingo Inc. Class A,0.139752
+SON,Sonoco Products Company,0.13904
+ACI,Albertsons Companies Inc. Class A,0.138431
+TNL,Travel + Leisure Co.,0.137248
+CELH,Celsius Holdings Inc.,0.136926
+LPX,Louisiana-Pacific Corporation,0.136726
+AN,AutoNation Inc.,0.136673
+BYD,Boyd Gaming Corporation,0.136169
+KNF,Knife River Corporation,0.135927
+RLI,RLI Corp.,0.135617
+VVV,Valvoline Inc.,0.134818
+BDC,Belden Inc.,0.134743
+CNO,CNO Financial Group Inc.,0.133608
+GAP,Gap Inc.,0.133468
+CBT,Cabot Corporation,0.133349
+ASB,Associated Banc-Corp,0.132882
+CUZ,Cousins Properties Incorporated,0.132139
+OLLI,Ollie's Bargain Outlet Holdings Inc,0.131211
+NXST,Nexstar Media Group Inc.,0.130165
+CNX,CNX Resources Corporation,0.129376
+SAIC,Science Applications International Corp.,0.128517
+OGS,ONE Gas Inc.,0.128101
+MUR,Murphy Oil Corporation,0.127974
+SLM,SLM Corp,0.127606
+SBRA,Sabra Health Care REIT Inc.,0.127086
+SR,Spire Inc.,0.126657
+DBX,Dropbox Inc. Class A,0.125997
+WING,Wingstop Inc.,0.12503
+G,Genpact Limited,0.124484
+PCTY,Paylocity Holding Corp.,0.122675
+FCN,FTI Consulting Inc.,0.122545
+PATH,UiPath Inc. Class A,0.122326
+PLNT,Planet Fitness Inc. Class A,0.122291
+FLG,Flagstar Bank National Association,0.122049
+EPR,EPR Properties,0.121796
+TCBI,Texas Capital Bancshares Inc.,0.12174
+BSY,Bentley Systems Incorporated Class B,0.12171
+WEX,WEX Inc.,0.121635
+FHI,Federated Hermes Inc. Class B,0.121426
+MAT,Mattel Inc.,0.121377
+HRB,H&R Block Inc.,0.121219
+CHWY,Chewy Inc. Class A,0.120815
+NWE,NorthWestern Energy Group Inc.,0.119428
+LIVN,LivaNova Plc,0.119234
+FFIN,First Financial Bankshares Inc,0.11883
+NVST,Envista Holdings Corp.,0.118104
+VNT,Vontier Corp,0.117805
+BBWI,Bath & Body Works Inc.,0.117079
+SHC,Sotera Health Company,0.116263
+KBR,KBR Inc.,0.115932
+WMG,Warner Music Group Corp. Class A,0.115156
+EXLS,ExlService Holdings Inc.,0.113344
+BCO,Brink's Company,0.112871
+KRC,Kilroy Realty Corporation,0.111629
+ANF,Abercrombie & Fitch Co. Class A,0.111282
+QLYS,Qualys Inc.,0.111014
+RYAN,Ryan Specialty Holdings Inc. Class A,0.11094
+IBOC,International Bancshares Corporation,0.110661
+OLED,Universal Display Corporation,0.109383
+LOPE,Grand Canyon Education Inc.,0.108824
+GHC,Graham Holdings Co. Class B,0.108181
+THO,Thor Industries Inc.,0.106382
+PII,Polaris Inc.,0.106068
+YETI,YETI Holdings Inc.,0.105986
+ELF,e.l.f. Beauty Inc.,0.105454
+CDP,COPT Defense Properties,0.105332
+IRT,Independence Realty Trust Inc.,0.104224
+POST,Post Holdings Inc.,0.103783
+APPF,AppFolio Inc Class A,0.102551
+SLGN,Silgan Holdings Inc.,0.101604
+BHF,Brighthouse Financial Inc.,0.100607
+PVH,PVH Corp.,0.098192
+MORN,Morningstar Inc.,0.098143
+OPCH,Option Care Health Inc,0.097091
+AVNT,Avient Corporation,0.095917
+HAE,Haemonetics Corporation,0.095875
+KBH,KB Home,0.095243
+HGV,Hilton Grand Vacations Inc.,0.094521
+HLNE,Hamilton Lane Incorporated Class A,0.093455
+PAG,Penske Automotive Group Inc.,0.089868
+DLB,Dolby Laboratories Inc. Class A,0.088625
+CAR,Avis Budget Group Inc.,0.088554
+GPK,Graphic Packaging Holding Company,0.08792
+NSA,National Storage Affiliates Trust,0.087515
+ASH,Ashland Inc.,0.086451
+VC,Visteon Corporation,0.08638
+PBF,PBF Energy Inc. Class A,0.086111
+MMS,MAXIMUS Inc.,0.084576
+HOG,Harley-Davidson Inc.,0.084357
+IPGP,IPG Photonics Corporation,0.082969
+PK,Park Hotels & Resorts Inc.,0.081847
+SMG,Scotts Miracle-Gro Company Class A,0.080417
+BILL,BILL Holdings Inc.,0.079544
+EXPO,Exponent Inc.,0.078939
+PSN,Parsons Corporation,0.076848
+PEGA,Pegasystems Inc.,0.076403
+DOCS,Doximity Inc. Class A,0.076154
+WLK,Westlake Corporation,0.074468
+FOUR,Shift4 Payments Inc. Class A,0.074048
+EEFT,Euronet Worldwide Inc.,0.071611
+KD,Kyndryl Holdings Incorporation,0.069934
+OLN,Olin Corporation,0.069549
+WHR,Whirlpool Corporation,0.068534
+CPRI,Capri Holdings Limited,0.067353
+CHH,Choice Hotels International Inc.,0.066117
+CXT,Crane NXT Co.,0.064464
+RH,RH,0.06343
+MZTI,Marzetti Company,0.060432
+XRAY,DENTSPLY SIRONA Inc.,0.057339
+GT,Goodyear Tire & Rubber Company,0.049286
+GEF,Greif Inc Class A,0.047445
+COLM,Columbia Sportswear Company,0.046823
+SAM,Boston Beer Company Inc. Class A,0.037679
+PPC,Pilgrim's Pride Corporation,0.032493
+BRBR,BellRing Brands Inc.,0.030857
+CNXC,Concentrix Corporation,0.03051
+BLKB,Blackbaud Inc.,0.026923
+COTY,Coty Inc. Class A,0.020047
