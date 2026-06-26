@@ -1160,3 +1160,9 @@ date,cohort,action,symbol
 2026-06-23,sp400,drop,COTY
 2026-06-23,munger,add,MRVL
 2026-06-23,munger,drop,IBM
+2026-06-26,sp500,add,ECHO
+2026-06-26,sp500,drop,SATS
+2026-06-26,munger,add,IBM
+2026-06-26,munger,add,PANW
+2026-06-26,munger,drop,WDC
+2026-06-26,munger,drop,STX
