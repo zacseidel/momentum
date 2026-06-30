@@ -1166,3 +1166,5 @@ date,cohort,action,symbol
 2026-06-26,munger,add,PANW
 2026-06-26,munger,drop,WDC
 2026-06-26,munger,drop,STX
+2026-06-30,sp500,add,HONA
+2026-06-30,sp500,drop,CAG
