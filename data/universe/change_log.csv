@@ -1168,3 +1168,13 @@ date,cohort,action,symbol
 2026-06-26,munger,drop,STX
 2026-06-30,sp500,add,HONA
 2026-06-30,sp500,drop,CAG
+2026-07-03,sp500,add,2670549D
+2026-07-03,sp500,drop,XOM
+2026-07-03,sp400,add,TOST
+2026-07-03,sp400,add,IESC
+2026-07-03,sp400,drop,JHG
+2026-07-03,sp400,drop,BLD
+2026-07-03,megacap,add,2670549D
+2026-07-03,megacap,drop,XOM
+2026-07-03,munger,add,2670549D
+2026-07-03,munger,drop,XOM
