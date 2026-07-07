@@ -1178,3 +1178,11 @@ date,cohort,action,symbol
 2026-07-03,megacap,drop,XOM
 2026-07-03,munger,add,2670549D
 2026-07-03,munger,drop,XOM
+2026-07-07,sp500,add,XOM
+2026-07-07,sp500,drop,2670549D
+2026-07-07,sp400,add,ALSN
+2026-07-07,sp400,drop,GT
+2026-07-07,megacap,add,XOM
+2026-07-07,megacap,drop,2670549D
+2026-07-07,munger,add,XOM
+2026-07-07,munger,drop,2670549D
