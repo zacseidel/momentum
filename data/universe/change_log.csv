@@ -1193,3 +1193,12 @@ date,cohort,action,symbol
 2026-07-17,munger,drop,TMO
 2026-07-21,megacap,add,BAC
 2026-07-21,megacap,drop,LRCX
+2026-07-24,sp400,add,BTSG
+2026-07-24,sp400,add,MOH
+2026-07-24,sp400,drop,NSA
+2026-07-24,megacap,add,LRCX
+2026-07-24,megacap,drop,BAC
+2026-07-24,munger,add,STX
+2026-07-24,munger,add,TMO
+2026-07-24,munger,drop,IBM
+2026-07-24,munger,drop,CRWD
