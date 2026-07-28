@@ -1202,3 +1202,11 @@ date,cohort,action,symbol
 2026-07-24,munger,add,TMO
 2026-07-24,munger,drop,IBM
 2026-07-24,munger,drop,CRWD
+2026-07-28,sp400,add,KRYS
+2026-07-28,sp400,drop,TMHC
+2026-07-28,megacap,add,BAC
+2026-07-28,megacap,drop,LRCX
+2026-07-28,munger,add,AMGN
+2026-07-28,munger,add,IBM
+2026-07-28,munger,drop,SNDK
+2026-07-28,munger,drop,STX
