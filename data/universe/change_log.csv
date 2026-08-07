@@ -1216,3 +1216,9 @@ date,cohort,action,symbol
 2026-08-04,megacap,drop,UNH
 2026-08-04,munger,add,CRWD
 2026-08-04,munger,drop,AMGN
+2026-08-07,sp500,add,FERG
+2026-08-07,sp500,drop,EA
+2026-08-07,megacap,add,CAT
+2026-08-07,megacap,drop,GE
+2026-08-07,munger,add,AMGN
+2026-08-07,munger,drop,CRWD
