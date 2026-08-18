@@ -39,11 +39,11 @@ jobs:
           git config --global user.name "Momentum Bot"
           git config --global user.email "bot@github.com"
           
-          # Add all changes (reports, docs, logs, db)
+          # Add report, site, universe, and cached market-data changes
           git add .
           
           # Commit if there are changes
-          git commit -m "📈 Auto-update: Weekly Report & Tracker [skip ci]" || echo "No changes to commit"
+          git commit -m "📈 Auto-update: Quantitative report [skip ci]" || echo "No changes to commit"
           
           # Push back to main
           git push

@@ -1,22 +1,19 @@
-# Quantitative Strategy Engine
+# Quantitative Market Report Engine
 
-**Project Status:** Active / v5 Dual-Engine Architecture
-**Last Update:** February 2026
-**Primary Goal:** Automated weekly stock market reporting, multi-strategy execution, and performance tracking.
+**Project Status:** Active
+**Primary Goal:** Automated twice-weekly stock-market analysis and static report generation.
 
 ## 📖 Project Overview
-This project implements a quantitative trading system comprising two distinct engines:
+This project implements a quantitative reporting system comprising three strategy families:
 1.  **Momentum Engine (Growth):** Focuses on **S&P 500**, **S&P 400 (MidCap)**, and **MegaCap** (Top 25).
 2.  **Munger Engine (Value/Reversion):** Focuses on high-quality **Top 50 Market Cap** stocks trading at a discount.
+3.  **Munger400L / Munger400R:** Applies mean reversion to the largest S&P 400 stocks by MDY weight and to former S&P 400 return leaders.
 
 It runs a weekly pipeline that:
 1.  **Syncs** the universe of stocks from State Street (SSGA).
 2.  **Downloads** price history using Polygon.io (optimized for free-tier rate limits).
 3.  **Ranks & Filters** stocks using cohort-specific logic (Momentum vs. Mean Reversion).
-4.  **Generates** a static website (`/docs`) with interactive reports and dashboards.
-5.  **Executes** a multi-strategy backtest:
-    * **Stocks:** Tracks active Buy/Sell signals with hybrid exit logic (Rank-based vs. Time-based).
-    * **Options:** "Shadow tracks" three specific option strategies (100d Call, LEAP, Short Put) for every stock pick.
+4.  **Generates** a static website (`/docs`) with interactive reports and charts.
 
 ---
 
@@ -26,7 +23,6 @@ It runs a weekly pipeline that:
 * **Cohorts:** MegaCap, S&P 500, S&P 400.
 * **Signal:** High 12-month volatility-adjusted returns with momentum persistence.
 * **Selection:** Top 5 per cohort.
-* **Exit Rule:** **Rank-Based.** Sell immediately when a stock drops out of the Top 5.
 
 ### 2. Munger Engine
 * **Cohort:** Top 50 Stocks by Market Cap.
@@ -34,21 +30,25 @@ It runs a weekly pipeline that:
     * *Dip:* Price dipped below the **200-day Moving Average** within the last 10 days.
     * *Recovery:* Price has recovered above the **10-day Moving Average**.
 * **Selection:** Opportunistic (All valid signals).
-* **Exit Rule:** **Time-Based.** Hold for a minimum of **365 days** to allow for mean reversion, ignoring weekly rank fluctuations.
+
+### 3. Munger400L and Munger400R
+* **Shared Signal:** At least one close below the 200-day SMA in the last 10 trading sessions, followed by the latest close above the 10-day SMA. Each SMA uses the fixed preceding 200 market sessions and requires at least 90% observation coverage; older rows are never pulled in to fill gaps.
+* **Munger400L Universe:** Largest 15% of current S&P 400 constituents by MDY portfolio weight.
+* **Munger400R Universe:** Current S&P 400 constituents that ranked in the top 15% by 12-month return on any twice-weekly report date during the trailing year.
 
 ---
 
 ## 🏗 System Architecture (AI Context)
 
 ### Data Flow
-`Universe` → `Prices (Deep History)` → `Ranking` → `Signal Generation` → `Tracker (Hybrid Exits)` → `Option Picker` → `Site Builder`
+`Universe` → `Prices (Cached History)` → `Ranking` → `Signal Generation` → `Report` → `Site Builder`
 
 ### Core Modules
 
 #### 1. Orchestration
 * **`run_report.py`**: The entry point.
     * **Role:** Async orchestrator.
-    * **Logic:** Syncs universe → Resolves dates → **Pre-heats Data** (fetches full history for winners) → Calculates Ranks → Updates Tracker → Builds Website.
+    * **Logic:** Syncs universe → Resolves dates → backfills required history → calculates ranks → renders the report → builds the website.
     * **Key Feature:** Ensures all chart data is in SQLite before report generation to prevent API throttling.
 
 #### 2. Data Ingestion
@@ -56,36 +56,23 @@ It runs a weekly pipeline that:
     * **Logic:** Derives `munger` cohort (Top 50) and `megacap` (Top 25) from SSGA raw files.
 * **`prices.py`**:
     * **Source:** Polygon.io (Grouped Daily + Aggregates).
-    * **Smart Backfill:** Includes `ensure_history_depth()` to fetch 300+ days of history for Munger candidates (needed for SMA200) vs. sparse snapshots for Momentum.
+    * **Smart Backfill:** Uses grouped-daily calls for broad cohort gaps and ticker-range calls when only a few symbols are deficient. All Polygon calls share a 13-second throttle.
 
 #### 3. Analytics & Strategy
 * **`ranking.py`**:
     * **Momentum Logic:** `(Current - 1Y) / 1Y` with persistence checks.
     * **Munger Logic:** Vectorized Pandas check for `(Low < SMA200) & (Close > SMA10)`.
-* **`strategies.py` (The Option Picker)**:
-    * **Role:** Auto-selects specific option contracts (e.g., "NVDA 260515 C 140") for every new stock signal.
-    * **Strategies:** 100d Call (5% OTM), LEAP (500d), Short Put (ATM).
-
 #### 4. Visualization
 * **`chart_module.py`**:
     * **Mode:** **Offline**. Reads strictly from `market_data.sqlite`.
     * **Output:** Generates Matplotlib candle charts with VOO (S&P 500) overlays for the report lightboxes.
-
-#### 5. Portfolio Tracking (`tracker.py`)
-* **Role:** The State Machine for the portfolio.
-* **Hybrid Exit Logic:**
-    * `if cohort == 'munger'`: Checks if `(Today - Entry_Date) > 365 days`.
-    * `else`: Checks if `ticker not in current_top_5`.
-* **Logs:** Maintains `data/trade_log.csv` (Stocks) and `data/option_log.csv` (Options).
-
----
 
 ## 🚀 Usage Guide
 
 ### 1. Setup
 ```bash
 # Install Dependencies
-pip install pandas numpy matplotlib mplfinance httpx requests jinja2 python-dotenv openpyxl markdown
+pip install -r requirements.txt
 
 # Set Environment Variables (.env)
 POLYGON_API_KEY=your_key_here

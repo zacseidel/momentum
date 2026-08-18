@@ -50,6 +50,46 @@ def initialize_database():
             except sqlite3.OperationalError:
                 pass # Column already exists, ignore
 
+        # 3. Report-only SP400 mean-reversion cohorts
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS top10_munger400l (
+                rank INTEGER,
+                ticker TEXT,
+                price REAL,
+                sma_200 REAL,
+                sma_10 REAL,
+                pct_below_200 REAL,
+                dip_date DATE,
+                weight REAL,
+                weight_rank INTEGER,
+                streak INTEGER DEFAULT 1,
+                streak_start DATE,
+                date DATE,
+                PRIMARY KEY (ticker, date)
+            )
+        """)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS top10_munger400r (
+                rank INTEGER,
+                ticker TEXT,
+                price REAL,
+                sma_200 REAL,
+                sma_10 REAL,
+                pct_below_200 REAL,
+                dip_date DATE,
+                best_12m_return REAL,
+                best_return_rank INTEGER,
+                return_universe_size INTEGER,
+                best_return_percentile REAL,
+                best_return_date DATE,
+                most_recent_qualified_date DATE,
+                streak INTEGER DEFAULT 1,
+                streak_start DATE,
+                date DATE,
+                PRIMARY KEY (ticker, date)
+            )
+        """)
+
         conn.commit()
         print(f"✅ Database initialized with Streak support at {DB_PATH}")
 

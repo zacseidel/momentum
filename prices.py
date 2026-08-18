@@ -1,6 +1,7 @@
 import os
 import sqlite3
 import asyncio
+import math
 import httpx
 import pandas as pd
 from datetime import date, timedelta
@@ -15,6 +16,7 @@ from universe import UniverseService
 load_dotenv()
 API_KEY = (os.getenv("POLYGON_API_KEY") or os.getenv("POLYGON_KEY") or "").strip()
 DB_PATH = Path("data/market_data.sqlite")
+API_WAIT_SECONDS = 13
 
 if not API_KEY:
     raise RuntimeError("Missing Polygon key. Set POLYGON_API_KEY in .env")
@@ -25,6 +27,8 @@ class PriceService:
         self._ensure_db()
         # Semaphore to limit concurrency (Polygon free tier limits)
         self._semaphore = asyncio.Semaphore(1) 
+        self._api_lock = asyncio.Lock()
+        self._last_api_call_at = 0.0
         self.valid_tickers = self._load_universe_tickers()
 
     def _ensure_db(self):
@@ -82,14 +86,21 @@ class PriceService:
 
         return resolved_map
 
-    async def ensure_history_depth(self, tickers: List[str], days_needed: int = 300):
+    async def ensure_history_depth(
+        self,
+        tickers: List[str],
+        days_needed: int = 300,
+        as_of: date = None,
+        min_rows: int = None,
+    ):
         """
         Ensure specific tickers (e.g. Munger cohort) have continuous daily history 
         in the DB to support SMA calculation.
         """
         print(f"🕵️ Checking history depth for {len(tickers)} tickers...")
         
-        start_check = date.today() - timedelta(days=days_needed)
+        end_date = as_of or date.today()
+        start_check = end_date - timedelta(days=days_needed)
         start_iso = start_check.isoformat()
         
         fetches_made = 0
@@ -99,31 +110,169 @@ class PriceService:
             with sqlite3.connect(self.db_path) as conn:
                 try:
                     count = conn.execute(
-                        "SELECT count(*) FROM daily_prices WHERE ticker=? AND date >= ?", 
-                        (ticker, start_iso)
+                        "SELECT count(*) FROM daily_prices WHERE ticker=? AND date >= ? AND date <= ?",
+                        (ticker, start_iso, end_date.isoformat())
                     ).fetchone()[0]
                 except Exception:
                     count = 0
             
             # If we have less than ~60% of the needed days, we assume gaps/missing data
-            threshold = int(days_needed * 0.6) 
+            threshold = min_rows if min_rows is not None else int(days_needed * 0.6)
 
             if count < threshold:
                 print(f"   📉 {ticker}: Found {count} rows (need >{threshold}). Backfilling...")
-                success = await self._backfill_ticker(ticker, start_check, date.today())
+                success = await self._backfill_ticker(ticker, start_check, end_date)
                 
                 if success:
                     fetches_made += 1
-                    # POLYGON FREE TIER LIMIT: 5 calls / minute.
-                    # We sleep 15s after every call to be safe (4 calls/min).
-                    print("      ⏳ Sleeping 15s for rate limit...")
-                    await asyncio.sleep(15)
             else:
                 # print(f"   ✅ {ticker}: History ok ({count} rows).")
                 pass
         
         if fetches_made > 0:
             print(f"   ✅ Backfill complete. Fetched {fetches_made} tickers.")
+
+    async def ensure_cohort_history_depth(
+        self,
+        tickers: List[str],
+        as_of: date,
+        session_count: int = 200,
+        minimum_observation_coverage: float = 0.90,
+        minimum_coverage: float = 0.90,
+    ):
+        """Fill a fixed 200-session window, using grouped or per-ticker calls efficiently."""
+        tickers = sorted(set(tickers))
+        if not tickers:
+            return
+
+        recent_session_count = 10
+        required_market_sessions = session_count + recent_session_count - 1
+        minimum_rows = math.ceil(session_count * minimum_observation_coverage)
+        start_date = as_of - timedelta(days=365)
+
+        market_sessions = self._get_market_sessions(as_of, required_market_sessions)
+        if len(market_sessions) < required_market_sessions:
+            print("   📈 Backfilling VOO once to establish the market-session calendar.")
+            await self._backfill_ticker("VOO", start_date, as_of)
+            market_sessions = self._get_market_sessions(as_of, required_market_sessions)
+        if len(market_sessions) < required_market_sessions:
+            raise RuntimeError(
+                f"Only {len(market_sessions)} recent market sessions are available; "
+                f"{required_market_sessions} are required for the SMA screen."
+            )
+
+        counts = self._get_rolling_window_counts(
+            tickers, market_sessions, session_count, recent_session_count
+        )
+        required_tickers = math.ceil(len(tickers) * minimum_coverage)
+        covered = sum(counts.get(ticker, 0) >= minimum_rows for ticker in tickers)
+        if covered >= required_tickers:
+            print(
+                f"   ✅ SP400 SMA coverage: {covered}/{len(tickers)} tickers have "
+                f"at least {minimum_rows}/{session_count} observations."
+            )
+            return
+
+        deficient = [ticker for ticker in tickers if counts.get(ticker, 0) < minimum_rows]
+        missing_grouped_dates = [
+            date.fromisoformat(target) for target in reversed(market_sessions)
+            if not self._is_date_in_db(target)
+        ]
+
+        print(
+            f"🧮 SP400 SMA backfill: {len(deficient)} ticker-range calls vs. "
+            f"up to {len(missing_grouped_dates)} grouped-day calls."
+        )
+        if len(missing_grouped_dates) < len(deficient):
+            print("   📚 Using grouped daily backfill; each call covers the full cohort.")
+            for index, target in enumerate(missing_grouped_dates, start=1):
+                await self._ensure_date_data(target)
+                if index % 10 == 0 or index == len(missing_grouped_dates):
+                    counts = self._get_rolling_window_counts(
+                        tickers, market_sessions, session_count, recent_session_count
+                    )
+                    covered = sum(counts.get(ticker, 0) >= minimum_rows for ticker in tickers)
+                    print(
+                        f"      History coverage after {index} grouped targets: "
+                        f"{covered}/{len(tickers)}"
+                    )
+                    if covered >= required_tickers:
+                        break
+        else:
+            print("   📈 Using ticker-range backfill; fewer individual calls are needed.")
+            await self.ensure_history_depth(
+                deficient,
+                days_needed=365,
+                as_of=as_of,
+                min_rows=minimum_rows,
+            )
+
+        final_counts = self._get_rolling_window_counts(
+            tickers, market_sessions, session_count, recent_session_count
+        )
+        final_covered = sum(
+            final_counts.get(ticker, 0) >= minimum_rows for ticker in tickers
+        )
+        if final_covered < required_tickers:
+            print(
+                f"   ⚠️ SP400 SMA history coverage is {final_covered}/{len(tickers)}; "
+                f"stocks below {minimum_rows}/{session_count} observations will be skipped."
+            )
+        else:
+            print(
+                f"   ✅ SP400 SMA coverage: {final_covered}/{len(tickers)} tickers have "
+                f"at least {minimum_rows}/{session_count} observations."
+            )
+
+    async def prepare_munger400_return_history(self, run_date: date) -> List[Dict[str, str]]:
+        """Cache and return the twice-weekly observation pairs used by Munger400R."""
+        start = pd.Timestamp(run_date) - pd.Timedelta(days=365)
+        scheduled_runs = [
+            timestamp.date()
+            for timestamp in pd.date_range(start=start, end=run_date, freq="D")
+            if timestamp.weekday() in (1, 4)  # Tuesday and Friday reports
+        ]
+        if run_date not in scheduled_runs:
+            scheduled_runs.append(run_date)
+
+        print(f"🗓️  Preparing {len(scheduled_runs)} Munger400R observation dates...")
+        pairs = []
+        seen = set()
+        # Polygon's two-year boundary can exclude the first few nominal dates.
+        # Keep a small safety margin and omit the whole 12-month pair instead of
+        # spending several calls backtracking into even older, unavailable dates.
+        provider_history_floor = date.today() - timedelta(days=720)
+        for scheduled_run in sorted(scheduled_runs):
+            observation = await self._ensure_date_data(scheduled_run - timedelta(days=1))
+            baseline_target = (
+                pd.Timestamp(observation) - pd.DateOffset(years=1)
+            ).date()
+            baseline = self._find_cached_market_date(baseline_target)
+            if baseline is None and baseline_target < provider_history_floor:
+                print(
+                    f"   ⚠️ Skipping {observation}: baseline {baseline_target} is "
+                    "outside Polygon's available history."
+                )
+                continue
+            if baseline is None:
+                try:
+                    baseline = await self._ensure_date_data(baseline_target)
+                except RuntimeError:
+                    print(
+                        f"   ⚠️ Skipping {observation}: no baseline data found near "
+                        f"{baseline_target}."
+                    )
+                    continue
+            key = (observation.isoformat(), baseline.isoformat())
+            if key in seen:
+                continue
+            seen.add(key)
+            pairs.append({
+                "observation_date": key[0],
+                "baseline_date": key[1],
+            })
+
+        return pairs
 
     async def get_snapshots(self, tickers: List[str], date_map: Dict[str, str]) -> pd.DataFrame:
         needed_dates = list(set(date_map.values()))
@@ -194,7 +343,7 @@ class PriceService:
         url = f"https://api.polygon.io/v2/aggs/ticker/{ticker}/range/1/day/{d}/{d}?adjusted=true&apiKey={API_KEY}"
         async with httpx.AsyncClient(timeout=15.0) as client:
             try:
-                resp = await client.get(url)
+                resp = await self._rate_limited_get(client, url)
                 if resp.status_code == 200:
                     res = resp.json().get("results", [])
                     if res:
@@ -214,7 +363,7 @@ class PriceService:
         # UPDATED: Timeout set to 15s to catch heavy stocks like INTC without hanging forever
         async with httpx.AsyncClient(timeout=15.0) as client:
             try:
-                resp = await client.get(url)
+                resp = await self._rate_limited_get(client, url)
                 if resp.status_code == 200:
                     results = resp.json().get("results", [])
                     if results:
@@ -255,7 +404,7 @@ class PriceService:
         # UPDATED: Timeout set to 15s
         async with httpx.AsyncClient(timeout=15.0) as client:
             try:
-                resp = await client.get(url)
+                resp = await self._rate_limited_get(client, url)
                 if resp.status_code == 429:
                     print("   ⚠️ Rate limited. Pausing 65s...")
                     await asyncio.sleep(65) 
@@ -299,3 +448,92 @@ class PriceService:
         with sqlite3.connect(self.db_path) as conn:
             row = conn.execute("SELECT count(*) FROM daily_prices WHERE date=?", (date_str,)).fetchone()
         return row[0] > 800
+
+    def _find_cached_market_date(self, target: date, max_backtrack: int = 5):
+        current = target
+        for _ in range(max_backtrack + 1):
+            while current.weekday() >= 5:
+                current -= timedelta(days=1)
+            if self._is_date_in_db(current.isoformat()):
+                return current
+            current -= timedelta(days=1)
+        return None
+
+    def _get_history_counts(self, tickers: List[str], start_date: date, end_date: date) -> Dict[str, int]:
+        placeholders = ",".join(["?"] * len(tickers))
+        with sqlite3.connect(self.db_path) as conn:
+            rows = conn.execute(
+                f"""
+                SELECT ticker, COUNT(*)
+                FROM daily_prices
+                WHERE ticker IN ({placeholders}) AND date >= ? AND date <= ?
+                GROUP BY ticker
+                """,
+                tickers + [start_date.isoformat(), end_date.isoformat()],
+            ).fetchall()
+        return {ticker: count for ticker, count in rows}
+
+    def _get_market_sessions(self, as_of: date, count: int) -> List[str]:
+        """Use VOO observations as the canonical US market-session calendar."""
+        with sqlite3.connect(self.db_path) as conn:
+            rows = conn.execute(
+                """
+                SELECT date
+                FROM daily_prices
+                WHERE ticker = 'VOO' AND date <= ?
+                ORDER BY date DESC
+                LIMIT ?
+                """,
+                (as_of.isoformat(), count),
+            ).fetchall()
+        return [row[0] for row in reversed(rows)]
+
+    def _get_rolling_window_counts(
+        self,
+        tickers: List[str],
+        market_sessions: List[str],
+        session_count: int,
+        recent_session_count: int,
+    ) -> Dict[str, int]:
+        """Return each ticker's weakest observation count across the recent SMA windows."""
+        ticker_placeholders = ",".join(["?"] * len(tickers))
+        date_placeholders = ",".join(["?"] * len(market_sessions))
+        with sqlite3.connect(self.db_path) as conn:
+            rows = conn.execute(
+                f"""
+                SELECT ticker, date
+                FROM daily_prices
+                WHERE ticker IN ({ticker_placeholders})
+                  AND date IN ({date_placeholders})
+                """,
+                tickers + market_sessions,
+            ).fetchall()
+
+        dates_by_ticker: Dict[str, Set[str]] = {ticker: set() for ticker in tickers}
+        for ticker, session_date in rows:
+            dates_by_ticker[ticker].add(session_date)
+
+        counts = {}
+        for ticker, available_dates in dates_by_ticker.items():
+            window_counts = [
+                sum(
+                    session_date in available_dates
+                    for session_date in market_sessions[offset:offset + session_count]
+                )
+                for offset in range(recent_session_count)
+            ]
+            counts[ticker] = min(window_counts) if window_counts else 0
+        return counts
+
+    async def _rate_limited_get(self, client: httpx.AsyncClient, url: str):
+        """Keep every Polygon request at least 13 seconds behind the previous one."""
+        async with self._api_lock:
+            loop = asyncio.get_running_loop()
+            elapsed = loop.time() - self._last_api_call_at
+            wait_seconds = API_WAIT_SECONDS - elapsed
+            if self._last_api_call_at and wait_seconds > 0:
+                print(f"      ⏳ Waiting {wait_seconds:.1f}s for Polygon rate limit...")
+                await asyncio.sleep(wait_seconds)
+            response = await client.get(url)
+            self._last_api_call_at = loop.time()
+            return response

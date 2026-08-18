@@ -7,4 +7,3 @@ httpx
 jinja2
 openpyxl
 markdown
-requests

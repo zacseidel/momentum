@@ -59,14 +59,13 @@ def build_website():
     # About (UPDATED FOR MUNGER STRATEGY)
     about_content = """
     <h2>The Philosophy</h2>
-    <p>This project applies quantitative strategies to the US Stock Market to remove emotion from investing. It currently runs two distinct strategy engines:</p>
+    <p>This project applies several quantitative strategies to the US Stock Market to remove emotion from investing:</p>
     
     <h3>1. Momentum Engine</h3>
     <p>Focuses on <strong>MegaCap</strong>, <strong>S&P 500</strong>, and <strong>MidCap 400</strong> cohorts.</p>
     <ul>
         <li><strong>Ranking:</strong> Stocks are ranked by 12-month volatility-adjusted returns.</li>
         <li><strong>Selection:</strong> Top 5 tickers in each cohort.</li>
-        <li><strong>Exit:</strong> Rank-based. Assets are sold immediately when they drop out of the Top 5.</li>
     </ul>
 
     <h3>2. Munger Engine (Mean Reversion)</h3>
@@ -74,7 +73,14 @@ def build_website():
     <ul>
         <li><strong>Signal:</strong> Price dips below the 200-day Moving Average (last 10 days) but recovers above the 10-day MA.</li>
         <li><strong>Selection:</strong> Opportunistic (all valid signals).</li>
-        <li><strong>Exit:</strong> Time-based. Assets are held for a minimum of 1 year to allow for mean reversion.</li>
+    </ul>
+
+    <h3>3. Munger400L and Munger400R (Report-Only)</h3>
+    <p>Applies the same close-based mean-reversion signal to two independent S&amp;P 400 screens.</p>
+    <ul>
+        <li><strong>Munger400L:</strong> The largest 15% of current constituents by MDY portfolio weight.</li>
+        <li><strong>Munger400R:</strong> Stocks that ranked in the top 15% by 12-month return on a report date during the trailing year.</li>
+        <li><strong>Signal:</strong> A close below the 200-day average during the last 10 sessions followed by a latest close above the 10-day average. The fixed 200-session window requires at least 90% observation coverage.</li>
     </ul>
 
     <h3>The Technology</h3>
@@ -127,7 +133,6 @@ def render_index(reports, trends):
             h2 { margin-top: 40px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
             .hero { background: #222; color: #fff; padding: 30px; border-radius: 8px; margin-bottom: 40px; display:flex; justify-content:space-between; align-items:center; }
             .hero h1 { margin: 0; color: #fff; }
-            .btn { background: #2ecc71; color: #fff; text-decoration: none; padding: 10px 20px; border-radius: 4px; font-weight: bold; }
             .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 40px; }
             .card-list { list-style: none; padding: 0; }
             .card-list li { margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #f0f0f0; }
@@ -141,7 +146,6 @@ def render_index(reports, trends):
                 <h1>Quantitative Engines</h1>
                 <p style="margin:5px 0 0 0; opacity:0.8;">Weekly Momentum & Mean Reversion Analysis.</p>
             </div>
-            <a href="https://zacseidel.github.io/eval" class="btn">View Performance 📈</a>
         </div>
 
         <div class="grid">

@@ -1,4 +1,5 @@
 import sqlite3
+import math
 import pandas as pd
 import numpy as np
 from pathlib import Path
@@ -146,6 +147,246 @@ class RankingService:
 
         return results_df
 
+    def rank_munger400l(self, candidates_df: pd.DataFrame, as_of_date: date) -> pd.DataFrame:
+        """Find mean-reversion signals among the largest 15% of the SP400 by MDY weight."""
+        candidates = self._clean_sp400_candidates(candidates_df)
+        if candidates.empty:
+            return pd.DataFrame()
+
+        candidates = candidates.sort_values("weight", ascending=False).reset_index(drop=True)
+        candidates["weight_rank"] = candidates.index + 1
+        size_count = math.ceil(len(candidates) * 0.15)
+        eligible = candidates.head(size_count).copy()
+
+        signals = self._mean_reversion_signals(eligible["symbol"].tolist(), as_of_date)
+        if signals.empty:
+            return pd.DataFrame()
+
+        results = signals.merge(
+            eligible[["symbol", "weight", "weight_rank"]].rename(columns={"symbol": "ticker"}),
+            on="ticker",
+            how="inner",
+        )
+        results = results.sort_values(["weight_rank", "ticker"]).reset_index(drop=True)
+        results.insert(0, "rank", results.index + 1)
+        return results
+
+    def rank_munger400r(
+        self,
+        candidates_df: pd.DataFrame,
+        as_of_date: date,
+        observation_pairs: List[Dict[str, str]],
+        minimum_coverage: float = 0.90,
+    ) -> pd.DataFrame:
+        """Find mean-reversion signals among recent top-15% SP400 return leaders."""
+        candidates = self._clean_sp400_candidates(candidates_df)
+        if candidates.empty or not observation_pairs:
+            return pd.DataFrame()
+
+        tickers = candidates["symbol"].tolist()
+        dates = sorted({
+            pair[key]
+            for pair in observation_pairs
+            for key in ("observation_date", "baseline_date")
+        })
+        placeholders = ",".join(["?"] * len(tickers))
+        date_placeholders = ",".join(["?"] * len(dates))
+        with sqlite3.connect(self.db_path) as conn:
+            prices = pd.read_sql_query(
+                f"""
+                SELECT ticker, date, close
+                FROM daily_prices
+                WHERE ticker IN ({placeholders}) AND date IN ({date_placeholders})
+                """,
+                conn,
+                params=tickers + dates,
+            )
+
+        if prices.empty:
+            raise RuntimeError("No SP400 price snapshots are available for Munger400R.")
+
+        pivoted = prices.pivot(index="ticker", columns="date", values="close")
+        minimum_count = math.ceil(len(tickers) * minimum_coverage)
+        leaders: Dict[str, Dict] = {}
+
+        for pair in sorted(observation_pairs, key=lambda item: item["observation_date"]):
+            observation_date = pair["observation_date"]
+            baseline_date = pair["baseline_date"]
+            if observation_date not in pivoted.columns or baseline_date not in pivoted.columns:
+                raise RuntimeError(
+                    f"Missing Munger400R snapshot pair: {observation_date} / {baseline_date}."
+                )
+
+            returns = (pivoted[observation_date] / pivoted[baseline_date] - 1).dropna()
+            if len(returns) < minimum_count:
+                raise RuntimeError(
+                    f"Munger400R coverage for {observation_date} is {len(returns)}/{len(tickers)}; "
+                    f"at least {minimum_count} valid stocks are required."
+                )
+
+            ranks = returns.rank(ascending=False, method="min").astype(int)
+            cutoff = math.ceil(len(returns) * 0.15)
+            qualified = ranks[ranks <= cutoff]
+
+            for ticker, return_rank in qualified.items():
+                percentile = return_rank / len(returns)
+                existing = leaders.get(ticker)
+                if existing is None or percentile < existing["best_return_percentile"]:
+                    leaders[ticker] = {
+                        "ticker": ticker,
+                        "best_12m_return": float(returns[ticker]),
+                        "best_return_rank": int(return_rank),
+                        "return_universe_size": int(len(returns)),
+                        "best_return_percentile": float(percentile),
+                        "best_return_date": observation_date,
+                        "most_recent_qualified_date": observation_date,
+                    }
+                else:
+                    existing["most_recent_qualified_date"] = observation_date
+
+        if not leaders:
+            return pd.DataFrame()
+
+        leadership = pd.DataFrame(leaders.values())
+        signals = self._mean_reversion_signals(leadership["ticker"].tolist(), as_of_date)
+        if signals.empty:
+            return pd.DataFrame()
+
+        results = signals.merge(leadership, on="ticker", how="inner")
+        results = results.sort_values(
+            ["best_return_percentile", "best_return_rank", "ticker"]
+        ).reset_index(drop=True)
+        results.insert(0, "rank", results.index + 1)
+        return results
+
+    def process_munger400_picks(
+        self, picks_df: pd.DataFrame, cohort: str, run_date: date
+    ) -> pd.DataFrame:
+        """Persist and format an independent Munger400 report cohort."""
+        if cohort not in {"munger400l", "munger400r"}:
+            raise ValueError(f"Unsupported Munger400 cohort: {cohort}")
+
+        self._ensure_munger400_table(cohort)
+        if picks_df.empty:
+            self._delete_run_date(cohort, run_date)
+            print(f"⚠️  No {cohort.upper()} candidates found.")
+            return pd.DataFrame()
+
+        persisted = self._calculate_streaks(picks_df.copy(), cohort, run_date)
+        persisted["date"] = run_date.isoformat()
+        self._save_to_db(persisted, cohort, run_date)
+
+        display_df = persisted.copy()
+        for column in ["price", "sma_200", "sma_10"]:
+            display_df[column] = display_df[column].apply(lambda value: f"${value:,.2f}")
+        display_df["pct_below_200"] = display_df["pct_below_200"].apply(
+            lambda value: f"{value:.1%}"
+        )
+        if cohort == "munger400l":
+            display_df["weight"] = display_df["weight"].apply(lambda value: f"{value:.3f}%")
+        else:
+            display_df["best_12m_return"] = display_df["best_12m_return"].apply(
+                lambda value: f"{value:.1%}"
+            )
+            display_df["best_return_percentile"] = display_df[
+                "best_return_percentile"
+            ].apply(lambda value: f"{value:.1%}")
+
+        print(f"   💾 Saved {len(display_df)} {cohort.upper()} picks.")
+        return display_df
+
+    @staticmethod
+    def _clean_sp400_candidates(candidates_df: pd.DataFrame) -> pd.DataFrame:
+        required = {"symbol", "weight"}
+        if candidates_df.empty or not required.issubset(candidates_df.columns):
+            return pd.DataFrame(columns=["symbol", "weight"])
+        candidates = candidates_df.dropna(subset=["symbol", "weight"]).copy()
+        candidates["symbol"] = candidates["symbol"].astype(str)
+        return candidates[candidates["symbol"] != "CASH_USD"].drop_duplicates("symbol")
+
+    def _mean_reversion_signals(
+        self,
+        tickers: List[str],
+        as_of_date: date,
+        minimum_coverage: float = 0.90,
+    ) -> pd.DataFrame:
+        """Apply SMA tests over fixed market-session windows, tolerating modest gaps."""
+        if not tickers:
+            return pd.DataFrame()
+
+        as_of = pd.Timestamp(as_of_date).date().isoformat()
+        sma_sessions = 200
+        recent_sessions = 10
+        required_sessions = sma_sessions + recent_sessions - 1
+        minimum_sma_observations = math.ceil(sma_sessions * minimum_coverage)
+        minimum_short_observations = math.ceil(recent_sessions * minimum_coverage)
+        placeholders = ",".join(["?"] * len(tickers))
+        with sqlite3.connect(self.db_path) as conn:
+            market_dates = [
+                row[0]
+                for row in conn.execute(
+                    """
+                    SELECT date
+                    FROM daily_prices
+                    WHERE ticker = 'VOO' AND date <= ?
+                    ORDER BY date DESC
+                    LIMIT ?
+                    """,
+                    (as_of, required_sessions),
+                ).fetchall()
+            ][::-1]
+            if len(market_dates) < required_sessions:
+                return pd.DataFrame()
+
+            date_placeholders = ",".join(["?"] * len(market_dates))
+            prices = pd.read_sql_query(
+                f"""
+                SELECT ticker, date, close
+                FROM daily_prices
+                WHERE ticker IN ({placeholders}) AND date IN ({date_placeholders})
+                ORDER BY ticker, date ASC
+                """,
+                conn,
+                params=tickers + market_dates,
+            )
+
+        signals = []
+        for ticker, group in prices.groupby("ticker"):
+            history = (
+                group.drop_duplicates("date")
+                .set_index("date")
+                .reindex(market_dates)
+            )
+            history["sma_200"] = history["close"].rolling(
+                sma_sessions, min_periods=minimum_sma_observations
+            ).mean()
+            history["sma_10"] = history["close"].rolling(
+                recent_sessions, min_periods=minimum_short_observations
+            ).mean()
+            recent = history.tail(recent_sessions)
+            latest = history.iloc[-1]
+            if pd.isna(latest["close"]) or pd.isna(latest["sma_200"]):
+                continue
+
+            dipped = recent[recent["close"] < recent["sma_200"]]
+            if (
+                dipped.empty
+                or pd.isna(latest["sma_10"])
+                or latest["close"] <= latest["sma_10"]
+            ):
+                continue
+
+            signals.append({
+                "ticker": ticker,
+                "price": float(latest["close"]),
+                "sma_200": float(latest["sma_200"]),
+                "sma_10": float(latest["sma_10"]),
+                "pct_below_200": float((latest["close"] - latest["sma_200"]) / latest["sma_200"]),
+                "dip_date": str(dipped.index[-1]),
+            })
+
+        return pd.DataFrame(signals)
+
     def extract_top_picks(self, ranked_df: pd.DataFrame, cohort: str, run_date: date) -> pd.DataFrame:
         """
         Standard Momentum Saver: Slices Top 10, calculates Streak, formats %.
@@ -280,3 +521,47 @@ class RankingService:
             #    if the table doesn't exist. This is exactly what we want 
             #    for 'top10_munger' to have different columns than 'top10_sp500'.
             df.to_sql(table_name, conn, if_exists="append", index=False)
+
+    def _delete_run_date(self, cohort: str, run_date: date):
+        table_name = f"top10_{cohort}"
+        with sqlite3.connect(self.db_path) as conn:
+            try:
+                conn.execute(f"DELETE FROM {table_name} WHERE date = ?", (run_date.isoformat(),))
+            except sqlite3.OperationalError:
+                pass
+
+    def _ensure_munger400_table(self, cohort: str):
+        if cohort == "munger400l":
+            extra_columns = """
+                weight REAL,
+                weight_rank INTEGER,
+            """
+        elif cohort == "munger400r":
+            extra_columns = """
+                best_12m_return REAL,
+                best_return_rank INTEGER,
+                return_universe_size INTEGER,
+                best_return_percentile REAL,
+                best_return_date DATE,
+                most_recent_qualified_date DATE,
+            """
+        else:
+            raise ValueError(f"Unsupported Munger400 cohort: {cohort}")
+
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute(f"""
+                CREATE TABLE IF NOT EXISTS top10_{cohort} (
+                    rank INTEGER,
+                    ticker TEXT,
+                    price REAL,
+                    sma_200 REAL,
+                    sma_10 REAL,
+                    pct_below_200 REAL,
+                    dip_date DATE,
+                    {extra_columns}
+                    streak INTEGER DEFAULT 1,
+                    streak_start DATE,
+                    date DATE,
+                    PRIMARY KEY (ticker, date)
+                )
+            """)

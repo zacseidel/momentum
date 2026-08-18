@@ -34,7 +34,7 @@ These are integration-style scripts, not unit tests — they hit the live DB and
 ```bash
 python test_prices.py       # Tests date resolution and Polygon fetching
 python test_ranking.py      # Tests full ranking pipeline for all 3 momentum cohorts
-python test_options.py      # Tests option contract selection via Polygon
+python -m unittest test_munger400_unit.py  # Offline Munger400 unit coverage
 ```
 
 ---
@@ -44,11 +44,9 @@ python test_options.py      # Tests option contract selection via Polygon
 ### Data Flow
 
 ```
-universe.py → prices.py → ranking.py → tracker.py → report.py → build_site.py
-                                              ↓
-                                        strategies.py (option picks)
-                                              ↓
-                                        chart_module.py (offline, SQLite only)
+universe.py → prices.py → ranking.py → report.py → build_site.py
+                                      ↓
+                                chart_module.py (offline, SQLite only)
 ```
 
 `run_report.py` is the async orchestrator that drives this entire pipeline in sequence.
@@ -58,12 +56,17 @@ universe.py → prices.py → ranking.py → tracker.py → report.py → build_
 **Momentum Engine** (cohorts: `megacap`, `sp500`, `sp400`):
 - Ranks by 12-month return, filtered to stocks where rank is improving or steady vs. last month
 - Picks Top 5 per cohort
-- Exit rule: rank-based — sell immediately when a stock drops out of Top 5
 
 **Munger Engine** (cohort: `munger`, Top 50 by market cap):
 - Signal: price dipped below SMA-200 within the last 10 trading days AND has recovered above SMA-10
 - Requires 300+ days of continuous history per ticker (fetched by `ensure_history_depth`)
-- Exit rule: time-based — hold for minimum 365 days
+
+**Munger400 Report Strategies** (current `sp400` constituents):
+- `munger400l`: largest 15% by MDY portfolio weight, then the close-based Munger SMA signal
+- `munger400r`: top 15% by 12-month return on any Tue/Fri report observation in the trailing year, then the same SMA signal
+- Each SMA-200 calculation uses its fixed preceding 200 market sessions, requires at least 90% observation coverage, and never pulls in older rows to fill gaps
+- Both persist independent report streaks and render as separate report sections
+- Observation pairs outside Polygon's retention window are skipped unless already present in SQLite
 
 ### Persistence
 
@@ -71,13 +74,12 @@ universe.py → prices.py → ranking.py → tracker.py → report.py → build_
   - `daily_prices`: OHLCV per ticker/date (primary key: `ticker, date`)
   - `top10_sp500`, `top10_sp400`, `top10_megacap`: weekly ranking snapshots with streak tracking
   - `top10_munger`: munger picks with different schema (price, SMA values instead of returns)
-- **`data/trade_log.csv`** — open/closed stock positions tracked by `TradeTracker`
-- **`data/option_log.csv`** — shadow option positions (100d Call, 500d LEAP, Short Put) per stock trade
+  - `top10_munger400l`, `top10_munger400r`: independent report-only SP400 mean-reversion snapshots
 - **`data/universe/`** — CSV files per cohort (`sp500.csv`, `sp400.csv`, `megacap.csv`, `munger.csv`) updated weekly from SSGA
 
 ### Key Design Constraints
 
-**Polygon free tier rate limiting**: The API allows 5 calls/minute. `PriceService` uses `asyncio.Semaphore(1)` and explicit `asyncio.sleep(15)` between backfill calls. `OptionPicker` (sync) sleeps 13s between calls. Do not remove these sleeps.
+**Polygon free tier rate limiting**: All Polygon requests in `PriceService` pass through one shared 13-second throttle. Broad SP400 history gaps use grouped-daily calls; isolated gaps use ticker-range calls.
 
 **Chart data must be pre-heated**: `chart_module.py` reads strictly from SQLite — it never calls the API. `run_report.py` calls `ensure_history_depth()` for all winners before generating reports to guarantee chart data is available.
 
@@ -87,6 +89,6 @@ universe.py → prices.py → ranking.py → tracker.py → report.py → build_
 
 ### Automation
 
-A GitHub Actions workflow (`.github/workflows/`) runs `run_report.py` on a schedule (Tue/Fri at 9:00 UTC) and commits all output — reports, docs site, logs, and the SQLite database — back to `main`. The static site is served from the `/docs` folder via GitHub Pages.
+A GitHub Actions workflow (`.github/workflows/`) runs `run_report.py` on a Tuesday/Friday schedule and commits the reports, docs site, universe files, and SQLite cache back to `main`. The static site is served from the `/docs` folder via GitHub Pages.
 
 The `trends/` directory contains manually authored markdown files that `build_site.py` renders into the site's Trends section.

@@ -149,7 +149,7 @@ class ReportService:
     # ------------------------------------------------------------------
     def _get_dropped_tickers(self, cohort: str, current_tickers: list, run_date: date) -> list:
         # Munger strategy is volatile/opportunistic, so "dropped" logic is less relevant
-        if cohort == "munger": return []
+        if cohort in {"munger", "munger400l", "munger400r"}: return []
         
         table_name = f"top10_{cohort}"
         current_set = set(current_tickers)
@@ -322,6 +322,17 @@ class ReportService:
                 # Munger specific summary line
                 # Shows "Discount" (pct below 200) instead of returns
                 extra_info = f"200SMA: {s.get('sma_200','N/A')}"
+            elif cohort == "munger400l":
+                extra_info = (
+                    f"MDY Weight: {s.get('weight', 'N/A')} "
+                    f"(#{s.get('weight_rank', 'N/A')}) | 200SMA: {s.get('sma_200', 'N/A')}"
+                )
+            elif cohort == "munger400r":
+                extra_info = (
+                    f"Best 12M: {s.get('best_12m_return', 'N/A')} "
+                    f"(#{s.get('best_return_rank', 'N/A')}/{s.get('return_universe_size', 'N/A')}) "
+                    f"| 200SMA: {s.get('sma_200', 'N/A')}"
+                )
             else:
                 # Standard Momentum
                 w_ret = s.get('last_week_return', 'N/A')
@@ -342,7 +353,7 @@ class ReportService:
             summary_lines.append(line)
         
         # 2. Dropped Summary (Only for momentum cohorts)
-        if dropped_stats and cohort != "munger":
+        if dropped_stats and cohort not in {"munger", "munger400l", "munger400r"}:
             summary_lines.append(f"<div style='margin-top:10px; padding-top:10px; border-top:1px dashed #ccc; color:#888; font-size:0.9em;'>")
             dropped_items = []
             for d in dropped_stats:
@@ -364,7 +375,7 @@ class ReportService:
                     {{ ticker }} <span style="font-weight:normal; color:#555;">— {{ name }}</span> <span style="color:#333;">{{ price }}</span>
                 </h3>
                 <span style="font-size:0.9em; color:#666; background:#f5f5f5; padding: 4px 8px; border-radius:4px;">
-                    {% if cohort != 'munger' %}Rank Change: <strong>{{ rank_change }}</strong> |{% endif %} {{ streak_html }}
+                    {% if cohort not in ['munger', 'munger400l', 'munger400r'] %}Rank Change: <strong>{{ rank_change }}</strong> |{% endif %} {{ streak_html }}
                 </span>
             </div>
             
@@ -376,6 +387,16 @@ class ReportService:
                                 <strong>Strategy:</strong> <span style="color:#0066cc;">Mean Reversion (Munger)</span><br>
                                 <span style="color:#666; font-size:0.9em;">200-Day Avg: {{ sma_200 }} | 10-Day Avg: {{ sma_10 }}</span><br>
                                 <span style="color:#666; font-size:0.9em;">Price Dip: {{ pct_below_200 }} below 200MA</span>
+                            {% elif cohort == 'munger400l' %}
+                                <strong>Strategy:</strong> <span style="color:#7d3c98;">Munger400L — Large Midcaps</span><br>
+                                <span style="color:#666; font-size:0.9em;">MDY Weight: {{ weight }} | Weight Rank: #{{ weight_rank }}</span><br>
+                                <span style="color:#666; font-size:0.9em;">200-Day Avg: {{ sma_200 }} | 10-Day Avg: {{ sma_10 }}</span><br>
+                                <span style="color:#666; font-size:0.9em;">Most Recent Dip: {{ dip_date }} | Current vs. 200MA: {{ pct_below_200 }}</span>
+                            {% elif cohort == 'munger400r' %}
+                                <strong>Strategy:</strong> <span style="color:#b9770e;">Munger400R — Former Return Leaders</span><br>
+                                <span style="color:#666; font-size:0.9em;">Best 12-Mo Return: {{ best_12m_return }} | Rank: #{{ best_return_rank }} of {{ return_universe_size }}</span><br>
+                                <span style="color:#666; font-size:0.9em;">Best Rank Date: {{ best_return_date }} | Last Qualified: {{ most_recent_qualified_date }}</span><br>
+                                <span style="color:#666; font-size:0.9em;">200-Day Avg: {{ sma_200 }} | 10-Day Avg: {{ sma_10 }} | Most Recent Dip: {{ dip_date }}</span>
                             {% else %}
                                 <strong>12-Mo Return:</strong> <span style="color:green; font-size:1.2em;">{{ current_return }}</span><br>
                                 <span style="color:#666; font-size:0.9em;">Last Week: {{ last_week_return }}</span>
@@ -494,6 +515,14 @@ class ReportService:
             {{ munger_summary | safe }}
             {% endif %}
 
+            <h2 id="summary-munger400l" style="border-left-color: #7d3c98;">🏛️ Munger400L — Large Midcap Mean Reversion</h2>
+            <p style="font-size:0.9em; color:#666;">Largest 15% of current S&amp;P 400 constituents by MDY portfolio weight that dipped below their 200-day average and recovered above their 10-day average.</p>
+            {{ munger400l_summary | safe }}
+
+            <h2 id="summary-munger400r" style="border-left-color: #b9770e;">↩️ Munger400R — Former Return Leaders</h2>
+            <p style="font-size:0.9em; color:#666;">S&amp;P 400 stocks that ranked in the top 15% by 12-month return during the last year, then dipped below their 200-day average and recovered above their 10-day average.</p>
+            {{ munger400r_summary | safe }}
+
             <h2 id="summary-megacap">💎 Mega Cap Leaders</h2>
             {{ mega_summary | safe }}
 
@@ -508,6 +537,16 @@ class ReportService:
             {% if munger_cards %}
             <h2>🧠 Munger Details</h2>
             {{ munger_cards | safe }}
+            {% endif %}
+
+            {% if munger400l_cards %}
+            <h2>🏛️ Munger400L Details</h2>
+            {{ munger400l_cards | safe }}
+            {% endif %}
+
+            {% if munger400r_cards %}
+            <h2>↩️ Munger400R Details</h2>
+            {{ munger400r_cards | safe }}
             {% endif %}
 
             <h2>💎 Mega Cap Details</h2>
@@ -547,6 +586,10 @@ class ReportService:
             voo=voo_stats,
             universe_changes=universe_changes,
             munger_summary=sections.get('munger', {}).get('summary', ''), munger_cards=sections.get('munger', {}).get('cards', ''),
+            munger400l_summary=sections.get('munger400l', {}).get('summary', "<p style='color:#777; font-style:italic;'>No active signals this week.</p>"),
+            munger400l_cards=sections.get('munger400l', {}).get('cards', ''),
+            munger400r_summary=sections.get('munger400r', {}).get('summary', "<p style='color:#777; font-style:italic;'>No active signals this week.</p>"),
+            munger400r_cards=sections.get('munger400r', {}).get('cards', ''),
             mega_summary=sections.get('megacap', {}).get('summary', ''), mega_cards=sections.get('megacap', {}).get('cards', ''),
             spy_summary=sections.get('sp500', {}).get('summary', ''), spy_cards=sections.get('sp500', {}).get('cards', ''),
             mdy_summary=sections.get('sp400', {}).get('summary', ''), mdy_cards=sections.get('sp400', {}).get('cards', ''),
