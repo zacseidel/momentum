@@ -1258,3 +1258,5 @@ date,cohort,action,symbol
 2026-09-01,munger,add,SNDK
 2026-09-01,munger,drop,IBM
 2026-09-01,munger,drop,C
+2026-09-04,munger,add,C
+2026-09-04,munger,drop,CRWD
