@@ -12,12 +12,14 @@ from dotenv import load_dotenv
 
 # --- Local Imports ---
 try:
-    from chart_module import plot_stock_chart
+    from chart_module import ma_signals_for_ticker, plot_stock_chart, render_ma_dots
     import matplotlib.pyplot as plt
-    plt.set_loglevel("warning") 
+    plt.set_loglevel("warning")
 except ImportError:
     print("⚠️ Warning: chart_module.py not found. Charts will be disabled.")
     plot_stock_chart = None
+    ma_signals_for_ticker = None
+    render_ma_dots = None
 
 # --- Configuration ---
 load_dotenv()
@@ -298,6 +300,11 @@ class ReportService:
             else:
                 streak_html = f"✨ <strong>New Entrant</strong>"
 
+            if ma_signals_for_ticker and render_ma_dots:
+                ma_dots = render_ma_dots(ma_signals_for_ticker(t))
+            else:
+                ma_dots = ""
+
             enriched.append({
                 **row.to_dict(), 
                 "name": name_text,
@@ -306,6 +313,7 @@ class ReportService:
                 "headlines": headlines,
                 "chart_uri": chart_uri,
                 "streak_html": streak_html,
+                "ma_dots": ma_dots,
                 "cohort": cohort
             })
             
@@ -343,7 +351,7 @@ class ReportService:
             line = f"""
                 <div style="margin-bottom: 4px;">
                     <a href="#{anchor}" style="text-decoration:none; font-weight:bold; color:{streak_color};">
-                        {s['ticker']}
+                        {s.get('ma_dots', '')}{s['ticker']}
                     </a> 
                     <span style="color:#555;">
                         ({s['price']} | {extra_info}) - {s['streak_html']}
@@ -372,7 +380,7 @@ class ReportService:
         <div id="{{ cohort }}-{{ ticker }}" style="border-bottom: 2px solid #eee; padding: 30px 0;">
             <div style="display:flex; justify-content:space-between; align-items:baseline;">
                 <h3 style="margin:0; font-size: 1.4em; color:#222;">
-                    {{ ticker }} <span style="font-weight:normal; color:#555;">— {{ name }}</span> <span style="color:#333;">{{ price }}</span>
+                    {{ ma_dots|default('') }}{{ ticker }} <span style="font-weight:normal; color:#555;">— {{ name }}</span> <span style="color:#333;">{{ price }}</span>
                 </h3>
                 <span style="font-size:0.9em; color:#666; background:#f5f5f5; padding: 4px 8px; border-radius:4px;">
                     {% if cohort not in ['munger', 'munger400l', 'munger400r'] %}Rank Change: <strong>{{ rank_change }}</strong> |{% endif %} {{ streak_html }}
@@ -475,6 +483,12 @@ class ReportService:
                 .uni-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9em; }
                 .uni-table th { text-align: left; background: #eee; padding: 8px; border-bottom: 2px solid #ddd; }
                 .uni-table td { padding: 8px; border-bottom: 1px solid #eee; }
+                .ma-dots { display: inline-flex; gap: 3px; margin-right: 6px; vertical-align: middle; }
+                .ma-dot { width: 0.7em; height: 0.7em; border-radius: 50%; display: inline-block; border: 1px solid rgba(0,0,0,.18); }
+                .ma-dot.above { background: #1b8a3a; }
+                .ma-dot.below { background: #c42020; }
+                .ma-dot.unknown { background: #ccc; }
+                .ma-legend { font-size: 0.88em; color: #555; margin: 0 0 20px; }
                 
                 @keyframes fadeIn { from {opacity: 0;} to {opacity: 1;} }
             </style>
@@ -485,6 +499,8 @@ class ReportService:
             </div>
 
             <h1>🚀 Momentum Strategy Report <span style="float:right; font-weight:normal; font-size:0.6em; color:#777;">{{ date }}</span></h1>
+
+            <p class="ma-legend">Colored dots next to each ticker (left to right) are the 10-day EMA, 21-day EMA, and 50-day SMA. Green means the last close was at or above that average; red means below.</p>
             
             <div class="benchmark">
                 <strong>Benchmark (VOO)</strong><br>

@@ -1,11 +1,24 @@
-import pandas as pd
-import mplfinance as mpf
 import sqlite3
 from pathlib import Path
-from typing import Tuple, Optional
+from typing import Optional, Tuple
+
+import matplotlib.pyplot as plt
+import mplfinance as mpf
+import pandas as pd
 
 # --- Config ---
 DB_PATH = Path("data/market_data.sqlite")
+EMA10_COLOR = "#1b9e77"
+EMA21_COLOR = "#7570b3"
+EMA10_SPAN = 10
+EMA21_SPAN = 21
+SMA50_WINDOW = 50
+
+_DOT_SPECS = (
+    ("10d EMA", "ema10_above"),
+    ("21d EMA", "ema21_above"),
+    ("50d SMA", "sma50_above"),
+)
 
 def _fetch_history_from_db(ticker: str, days_back=365) -> pd.DataFrame:
     """
@@ -47,6 +60,95 @@ def _fetch_history_from_db(ticker: str, days_back=365) -> pd.DataFrame:
     })
     
     return df[["Open", "High", "Low", "Close", "Volume"]]
+
+
+def ema(close: pd.Series, span: int) -> pd.Series:
+    """Standard recursive EMA: alpha = 2/(span+1), seeded from the first observation."""
+    return close.astype(float).ewm(span=span, adjust=False, min_periods=span).mean()
+
+
+def sma(close: pd.Series, window: int) -> pd.Series:
+    return close.astype(float).rolling(window=window, min_periods=window).mean()
+
+
+def moving_average_series(close: pd.Series) -> dict:
+    close = close.astype(float)
+    return {
+        "ema10": ema(close, EMA10_SPAN),
+        "ema21": ema(close, EMA21_SPAN),
+        "sma50": sma(close, SMA50_WINDOW),
+    }
+
+
+def _last_above(close: pd.Series, average: pd.Series) -> Optional[bool]:
+    if close.empty or average.empty:
+        return None
+    last_close = close.iloc[-1]
+    last_avg = average.iloc[-1]
+    if pd.isna(last_close) or pd.isna(last_avg):
+        return None
+    return float(last_close) >= float(last_avg)
+
+
+def ma_position_signals(close: pd.Series) -> dict:
+    """Last-close vs 10d EMA / 21d EMA / 50d SMA. True=above, False=below, None=unknown."""
+    empty = pd.Series(dtype=float)
+    if close is None or len(close) == 0:
+        return {
+            "ema10": empty,
+            "ema21": empty,
+            "sma50": empty,
+            "ema10_above": None,
+            "ema21_above": None,
+            "sma50_above": None,
+        }
+    series = moving_average_series(close)
+    return {
+        **series,
+        "ema10_above": _last_above(close, series["ema10"]),
+        "ema21_above": _last_above(close, series["ema21"]),
+        "sma50_above": _last_above(close, series["sma50"]),
+    }
+
+
+def ma_signals_for_ticker(ticker: str) -> dict:
+    df = _fetch_history_from_db(ticker)
+    if df.empty:
+        return ma_position_signals(pd.Series(dtype=float))
+    return ma_position_signals(df["Close"])
+
+
+def render_ma_dots(signals: Optional[dict] = None) -> str:
+    """Three traffic-light dots: 10d EMA, 21d EMA, 50d SMA."""
+    signals = signals or {}
+    parts = []
+    for label, key in _DOT_SPECS:
+        above = signals.get(key)
+        if above is True:
+            cls, title = "above", f"{label}: last close above"
+        elif above is False:
+            cls, title = "below", f"{label}: last close below"
+        else:
+            cls, title = "unknown", f"{label}: insufficient history"
+        parts.append(f'<span class="ma-dot {cls}" title="{title}"></span>')
+    return f'<span class="ma-dots">{"".join(parts)}</span>'
+
+
+def _ema_addplots(close: pd.Series) -> list:
+    """Skip an EMA overlay when the series has no plottable values yet."""
+    series = moving_average_series(close)
+    addplots = []
+    for key, color, label in (
+        ("ema10", EMA10_COLOR, "10d EMA"),
+        ("ema21", EMA21_COLOR, "21d EMA"),
+    ):
+        values = series[key]
+        if values.notna().any():
+            addplots.append(
+                mpf.make_addplot(values.values, color=color, width=1.1, label=label)
+            )
+    return addplots
+
 
 def plot_stock_chart(ticker: str, save_path: str = None, benchmark_ticker="VOO") -> Tuple:
     """
@@ -97,6 +199,8 @@ def plot_stock_chart(ticker: str, save_path: str = None, benchmark_ticker="VOO")
                         label=f"{benchmark_ticker} (Comp)"
                     )
                 )
+
+    addplots.extend(_ema_addplots(df["Close"]))
 
     # 3. Plot Style
     mc = mpf.make_marketcolors(up="#00b300", down="#ff3333", edge="inherit", wick="inherit", volume="in")
