@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import sqlite3
 import asyncio
@@ -5,10 +7,12 @@ import httpx
 import base64
 import io
 import pandas as pd
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 from jinja2 import Template
 from dotenv import load_dotenv
+
+from industry_report import generate_industry_html as render_industry_page
 
 # --- Local Imports ---
 try:
@@ -43,9 +47,21 @@ class ReportService:
                     name TEXT,
                     description TEXT,
                     sector TEXT,
-                    url TEXT
+                    url TEXT,
+                    sic_code TEXT,
+                    market_cap REAL,
+                    fetched_at TEXT
                 )
             """)
+            for column, definition in (
+                ("sic_code", "TEXT"),
+                ("market_cap", "REAL"),
+                ("fetched_at", "TEXT"),
+            ):
+                try:
+                    conn.execute(f"ALTER TABLE company_metadata ADD COLUMN {column} {definition}")
+                except sqlite3.OperationalError:
+                    pass
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS company_news (
                     id TEXT PRIMARY KEY,
@@ -101,6 +117,48 @@ class ReportService:
                     self._save_news(news_items)
                     await asyncio.sleep(RATE_LIMIT_SLEEP)
 
+    async def upsert_profiles(self, tickers: list[str]) -> int:
+        """Fetch ticker overview for the given names, overwriting any cached profile."""
+        if not tickers:
+            return 0
+        fetched = 0
+        print(f"📥 Refreshing company profiles for {len(tickers)} tickers (approx {len(tickers)*RATE_LIMIT_SLEEP}s)...")
+        async with httpx.AsyncClient() as client:
+            for i, ticker in enumerate(tickers):
+                print(f"    [{i+1}/{len(tickers)}] Fetching profile for {ticker}...")
+                data = await self._fetch_polygon_details(client, ticker)
+                if data:
+                    self._save_metadata([data])
+                    fetched += 1
+                if i + 1 < len(tickers):
+                    await asyncio.sleep(RATE_LIMIT_SLEEP)
+        return fetched
+
+    def load_company_metadata(self, tickers: list[str] | None = None) -> pd.DataFrame:
+        with sqlite3.connect(self.db_path) as conn:
+            if tickers:
+                placeholders = ",".join(["?"] * len(tickers))
+                return pd.read_sql(
+                    f"SELECT * FROM company_metadata WHERE ticker IN ({placeholders})",
+                    conn,
+                    params=tickers,
+                )
+            try:
+                return pd.read_sql("SELECT * FROM company_metadata", conn)
+            except Exception:
+                return pd.DataFrame()
+
+    def generate_industry_html(
+        self,
+        stock_ranks: pd.DataFrame,
+        industry_ranks: pd.DataFrame,
+        run_date: date,
+        target_dates: dict,
+    ) -> str:
+        metadata = self.load_company_metadata()
+        voo_stats = self._get_voo_stats(target_dates)
+        return render_industry_page(stock_ranks, industry_ranks, metadata, run_date, voo_stats)
+
     # --- RESTORED HELPERS ---
 
     async def _fetch_polygon_details(self, client, ticker):
@@ -114,7 +172,10 @@ class ReportService:
                     "name": data.get("name"),
                     "description": data.get("description"),
                     "sector": data.get("sic_description") or data.get("market", ""),
-                    "url": data.get("homepage_url")
+                    "url": data.get("homepage_url"),
+                    "sic_code": data.get("sic_code"),
+                    "market_cap": data.get("market_cap"),
+                    "fetched_at": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
                 }
         except Exception: 
             pass
@@ -139,7 +200,14 @@ class ReportService:
         items = [i for i in items if i]
         if items:
             with sqlite3.connect(self.db_path) as conn:
-                conn.executemany("INSERT OR REPLACE INTO company_metadata VALUES (:ticker, :name, :description, :sector, :url)", items)
+                conn.executemany(
+                    """
+                    INSERT OR REPLACE INTO company_metadata
+                    (ticker, name, description, sector, url, sic_code, market_cap, fetched_at)
+                    VALUES (:ticker, :name, :description, :sector, :url, :sic_code, :market_cap, :fetched_at)
+                    """,
+                    items,
+                )
 
     def _save_news(self, items):
         if items:

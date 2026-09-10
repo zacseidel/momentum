@@ -1,0 +1,85 @@
+sic2,name
+00,Unclassified
+01,Agricultural Crops
+02,Livestock & Animal Specialties
+07,Agricultural Services
+08,Forestry
+09,Fishing Hunting & Trapping
+10,Metal Mining
+12,Coal Mining
+13,Oil & Gas Extraction
+14,Nonmetallic Minerals
+15,Building Construction
+16,Heavy Construction
+17,Special Trade Contractors
+20,Food & Kindred Products
+21,Tobacco Products
+22,Textile Mill Products
+23,Apparel & Finished Fabrics
+24,Lumber & Wood Products
+25,Furniture & Fixtures
+26,Paper & Allied Products
+27,Printing & Publishing
+28,Chemicals & Allied Products
+29,Petroleum Refining
+30,Rubber & Plastics
+31,Leather Products
+32,Stone Clay Glass & Concrete
+33,Primary Metal Industries
+34,Fabricated Metal Products
+35,Industrial Machinery & Computers
+36,Electronic & Electrical Equipment
+37,Transportation Equipment
+38,Instruments & Related Products
+39,Miscellaneous Manufacturing
+40,Railroad Transportation
+41,Local & Interurban Transit
+42,Trucking & Warehousing
+43,United States Postal Service
+44,Water Transportation
+45,Air Transportation
+46,Pipelines Except Natural Gas
+47,Transportation Services
+48,Communications
+49,Electric Gas & Sanitary Services
+50,Wholesale Durable Goods
+51,Wholesale Nondurable Goods
+52,Building Materials & Garden
+53,General Merchandise Stores
+54,Food Stores
+55,Auto Dealers & Gas Stations
+56,Apparel & Accessory Stores
+57,Home Furniture & Furnishings
+58,Eating & Drinking Places
+59,Miscellaneous Retail
+60,Depository Institutions
+61,Nondepository Credit
+62,Security & Commodity Brokers
+63,Insurance Carriers
+64,Insurance Agents & Brokers
+65,Real Estate
+67,Holding & Investment Offices
+70,Hotels & Lodging
+72,Personal Services
+73,Business Services
+75,Automotive Repair & Services
+76,Miscellaneous Repair Services
+78,Motion Pictures
+79,Amusement & Recreation
+80,Health Services
+81,Legal Services
+82,Educational Services
+83,Social Services
+84,Museums & Gardens
+86,Membership Organizations
+87,Engineering Accounting & Research
+88,Private Households
+89,Miscellaneous Services
+91,Executive & General Government
+92,Justice & Public Order
+93,Public Finance & Taxation
+94,Human Resource Programs
+95,Environmental & Housing Programs
+96,Economic Programs
+97,National Security
+99,Nonclassifiable Establishments

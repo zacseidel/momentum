@@ -22,12 +22,28 @@ HOLDINGS_URLS = {
 # Main Service
 # --------------------------------------------------------------------------------------
 
+INVALID_SYMBOLS = {"-", "CASH_USD"}
+
+
+def is_valid_ticker(symbol: str) -> bool:
+    value = str(symbol).strip()
+    if not value or value in INVALID_SYMBOLS:
+        return False
+    return not value[0].isdigit()
+
+
 class UniverseService:
     """Maintain latest universe CSVs & an append-only change log."""
 
     def __init__(self, data_dir: Path | str = "data/universe") -> None:
         self.data_dir = Path(data_dir)
         self.data_dir.mkdir(parents=True, exist_ok=True)
+
+    def combined_universe_tickers(self) -> list[str]:
+        """S&P 500 + S&P 400 symbols, excluding cash rows and SSGA placeholders."""
+        frames = [self.get_cohort("sp500"), self.get_cohort("sp400")]
+        symbols = pd.concat(frames, ignore_index=True)["symbol"].astype(str)
+        return sorted({symbol for symbol in symbols if is_valid_ticker(symbol)})
 
     # ------------- public -------------
 

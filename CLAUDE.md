@@ -34,7 +34,7 @@ These are integration-style scripts, not unit tests — they hit the live DB and
 ```bash
 python test_prices.py       # Tests date resolution and Polygon fetching
 python test_ranking.py      # Tests full ranking pipeline for all 3 momentum cohorts
-python -m unittest test_munger400_unit.py  # Offline Munger400 unit coverage
+python -m unittest test_munger400_unit.py test_industry.py  # Offline unit coverage
 ```
 
 ---
@@ -75,6 +75,8 @@ universe.py → prices.py → ranking.py → report.py → build_site.py
   - `top10_sp500`, `top10_sp400`, `top10_megacap`: weekly ranking snapshots with streak tracking
   - `top10_munger`: munger picks with different schema (price, SMA values instead of returns)
   - `top10_munger400l`, `top10_munger400r`: independent report-only SP400 mean-reversion snapshots
+  - `momentum_ranks` / `industry_ranks`: unfiltered combined S&P 500+400 12-month ranks and SIC 2-digit industry aggregates
+  - `company_metadata`: Massive ticker overview (SIC code, market cap) used by the industry page
 - **`data/universe/`** — CSV files per cohort (`sp500.csv`, `sp400.csv`, `megacap.csv`, `munger.csv`) updated weekly from SSGA
 
 ### Key Design Constraints

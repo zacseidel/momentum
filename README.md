@@ -79,3 +79,9 @@ POLYGON_API_KEY=your_key_here
 
 # Initialize Database
 python init_db.py
+
+# One-time Massive company-profile backfill (SIC + market cap) for the industry page
+python refresh_company_metadata.py
+
+# Rebuild the industry HTML from SQLite after metadata changes (no API)
+python generate_industry_page.py 2026-09-08

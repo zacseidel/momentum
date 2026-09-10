@@ -27,7 +27,13 @@ def build_website():
 
     # 2. Reports
     report_links = []
+    industry_by_date = {}
     if REPORTS_DIR.exists():
+        for f in sorted(REPORTS_DIR.glob("industry_*.html"), reverse=True):
+            shutil.copy(f, SITE_REPORTS / f.name)
+            date_str = f.stem.replace("industry_", "")
+            industry_by_date[date_str] = f"reports/{f.name}"
+
         for f in sorted(REPORTS_DIR.glob("momentum_*.html"), reverse=True):
             shutil.copy(f, SITE_REPORTS / f.name)
             date_str = f.stem.replace("momentum_", "")
@@ -36,7 +42,10 @@ def build_website():
             except ValueError: display_date = date_str
 
             report_links.append({
-                "date": date_str, "url": f"reports/{f.name}", "display": display_date
+                "date": date_str,
+                "url": f"reports/{f.name}",
+                "display": display_date,
+                "industry_url": industry_by_date.get(date_str),
             })
 
     # 4. Trends
@@ -83,8 +92,16 @@ def build_website():
         <li><strong>Signal:</strong> A close below the 200-day average during the last 10 sessions followed by a latest close above the 10-day average. The fixed 200-session window requires at least 90% observation coverage.</li>
     </ul>
 
+    <h3>4. Industry &amp; Rank Changes</h3>
+    <p>A separate weekly page treats S&amp;P 500 and S&amp;P 400 as one universe.</p>
+    <ul>
+        <li><strong>Stock ranks:</strong> 12-month return across the combined universe, compared with the same 12-month rank from one month earlier.</li>
+        <li><strong>Industries:</strong> SIC 2-digit major groups, cap-weighted with Massive market caps, ranked the same way.</li>
+        <li><strong>Not the Top 5 strategy:</strong> this page includes names whose rank is falling, not only improving momentum picks.</li>
+    </ul>
+
     <h3>The Technology</h3>
-    <p>Built with Python, using Polygon.io for data, SQLite for caching, and GitHub Actions for automation.</p>
+    <p>Built with Python, using Polygon.io / Massive for data, SQLite for caching, and GitHub Actions for automation.</p>
     """
     (SITE_DIR / "about.html").write_text(
         render_page_tpl("About This Project", about_content), encoding="utf-8"
@@ -155,6 +172,9 @@ def render_index(reports, trends):
                     {% for r in reports %}
                     <li>
                         <a href="{{ r.url }}">{{ r.display }}</a>
+                        {% if r.industry_url %}
+                        <span class="meta"> · <a href="{{ r.industry_url }}">Industry ranks</a></span>
+                        {% endif %}
                     </li>
                     {% endfor %}
                     {% if not reports %}<li>No reports found.</li>{% endif %}

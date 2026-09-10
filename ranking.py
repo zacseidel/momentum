@@ -4,7 +4,9 @@ import pandas as pd
 import numpy as np
 from pathlib import Path
 from datetime import date
-from typing import Dict, List
+from typing import Dict, List, Optional
+
+from sic import UNCLASSIFIED_SIC2, industry_name, load_sic_major_groups, sic2_from_code
 
 # --- Configuration ---
 DB_PATH = Path("data/market_data.sqlite")
@@ -13,7 +15,12 @@ class RankingService:
     def __init__(self, db_path: Path = DB_PATH):
         self.db_path = db_path
 
-    def calculate_ranks(self, prices_df: pd.DataFrame, date_map: Dict[str, str]) -> pd.DataFrame:
+    def calculate_ranks(
+        self,
+        prices_df: pd.DataFrame,
+        date_map: Dict[str, str],
+        require_improving: bool = True,
+    ) -> pd.DataFrame:
         """
         Takes raw price data, calculates momentum returns, and ranks them.
         Returns a DataFrame sorted by best performance.
@@ -55,9 +62,10 @@ class RankingService:
             "rank_change":       rank_change
         })
 
-        # 6. Filter: "Improving or Steady"
+        # 6. Filter: "Improving or Steady" (Top-picks path only)
         df = df.dropna()
-        df = df[df["current_rank"] <= df["last_month_rank"]]
+        if require_improving:
+            df = df[df["current_rank"] <= df["last_month_rank"]]
         
         # Sort by raw return (Highest first)
         return df.sort_values("current_return", ascending=False)
@@ -565,3 +573,165 @@ class RankingService:
                     PRIMARY KEY (ticker, date)
                 )
             """)
+
+    def _ranks_with_ticker(self, ranked_df: pd.DataFrame) -> pd.DataFrame:
+        df = ranked_df.copy()
+        if "ticker" not in df.columns:
+            df = df.reset_index()
+            if "ticker" not in df.columns:
+                df = df.rename(columns={"index": "ticker"})
+        return df
+
+    def save_momentum_ranks(self, ranked_df: pd.DataFrame, run_date: date) -> pd.DataFrame:
+        """Persist the unfiltered combined-universe 12-month ranks for one report date."""
+        self._ensure_momentum_rank_tables()
+        df = self._ranks_with_ticker(ranked_df)
+        if df.empty:
+            return df
+        run_iso = run_date.isoformat()
+        out = df[[
+            "ticker",
+            "current_return",
+            "last_month_return",
+            "last_week_return",
+            "current_rank",
+            "last_month_rank",
+            "rank_change",
+        ]].copy()
+        out["date"] = run_iso
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute("DELETE FROM momentum_ranks WHERE date = ?", (run_iso,))
+            out.to_sql("momentum_ranks", conn, if_exists="append", index=False)
+        return out
+
+    def rank_industries(
+        self,
+        ranked_df: pd.DataFrame,
+        metadata_df: pd.DataFrame,
+        sic_names: Optional[Dict[str, str]] = None,
+    ) -> pd.DataFrame:
+        """Cap-weight 12-month returns by SIC 2-digit major group and rank the groups."""
+        names = sic_names if sic_names is not None else load_sic_major_groups()
+        stocks = self._ranks_with_ticker(ranked_df)
+        if stocks.empty:
+            return pd.DataFrame()
+
+        meta = metadata_df.copy() if metadata_df is not None else pd.DataFrame()
+        if meta.empty:
+            meta = pd.DataFrame(columns=["ticker", "sic_code", "market_cap", "name"])
+        else:
+            meta = meta.copy()
+            meta["ticker"] = meta["ticker"].astype(str)
+        if "sic_code" not in meta.columns:
+            meta["sic_code"] = None
+        if "market_cap" not in meta.columns:
+            meta["market_cap"] = None
+
+        merged = stocks.merge(
+            meta[["ticker", "sic_code", "market_cap"]],
+            on="ticker",
+            how="left",
+        )
+        merged["sic2"] = merged["sic_code"].apply(sic2_from_code)
+        merged["market_cap"] = pd.to_numeric(merged["market_cap"], errors="coerce")
+
+        rows = []
+        for sic2, group in merged.groupby("sic2", dropna=False):
+            key = sic2_from_code(sic2)
+            current, current_coverage = _cap_weighted_return(
+                group["current_return"], group["market_cap"]
+            )
+            previous, _ = _cap_weighted_return(
+                group["last_month_return"], group["market_cap"]
+            )
+            total_cap = group["market_cap"].dropna()
+            rows.append({
+                "sic2": key,
+                "name": industry_name(key, names),
+                "n_companies": int(len(group)),
+                "market_cap": float(total_cap.sum()) if not total_cap.empty else None,
+                "coverage": current_coverage,
+                "current_return": current,
+                "last_month_return": previous,
+            })
+
+        result = pd.DataFrame(rows)
+        if result.empty:
+            return result
+        result["current_rank"] = result["current_return"].rank(ascending=False, method="min")
+        result["last_month_rank"] = result["last_month_return"].rank(ascending=False, method="min")
+        result["rank_change"] = result["last_month_rank"] - result["current_rank"]
+        return result.sort_values(
+            ["current_rank", "sic2"],
+            na_position="last",
+        ).reset_index(drop=True)
+
+    def save_industry_ranks(self, industry_df: pd.DataFrame, run_date: date) -> pd.DataFrame:
+        self._ensure_momentum_rank_tables()
+        if industry_df.empty:
+            return industry_df
+        run_iso = run_date.isoformat()
+        out = industry_df.copy()
+        out["date"] = run_iso
+        columns = [
+            "sic2",
+            "date",
+            "name",
+            "n_companies",
+            "market_cap",
+            "coverage",
+            "current_return",
+            "last_month_return",
+            "current_rank",
+            "last_month_rank",
+            "rank_change",
+        ]
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute("DELETE FROM industry_ranks WHERE date = ?", (run_iso,))
+            out[columns].to_sql("industry_ranks", conn, if_exists="append", index=False)
+        return out
+
+    def _ensure_momentum_rank_tables(self):
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS momentum_ranks (
+                    ticker TEXT,
+                    date DATE,
+                    current_return REAL,
+                    last_month_return REAL,
+                    last_week_return REAL,
+                    current_rank REAL,
+                    last_month_rank REAL,
+                    rank_change REAL,
+                    PRIMARY KEY (ticker, date)
+                )
+            """)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS industry_ranks (
+                    sic2 TEXT,
+                    date DATE,
+                    name TEXT,
+                    n_companies INTEGER,
+                    market_cap REAL,
+                    coverage REAL,
+                    current_return REAL,
+                    last_month_return REAL,
+                    current_rank REAL,
+                    last_month_rank REAL,
+                    rank_change REAL,
+                    PRIMARY KEY (sic2, date)
+                )
+            """)
+
+
+def _cap_weighted_return(returns: pd.Series, caps: pd.Series) -> tuple:
+    returns = pd.to_numeric(returns, errors="coerce")
+    caps = pd.to_numeric(caps, errors="coerce")
+    eligible = returns.notna() & caps.notna() & (caps > 0)
+    total_cap = float(caps[caps.notna() & (caps > 0)].sum())
+    if not eligible.any() or total_cap <= 0:
+        return None, 0.0
+    eligible_cap = float(caps[eligible].sum())
+    value = float((returns[eligible] * caps[eligible]).sum() / eligible_cap)
+    return value, eligible_cap / total_cap
+

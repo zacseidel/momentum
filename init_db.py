@@ -90,6 +90,59 @@ def initialize_database():
             )
         """)
 
+        # 4. Combined-universe 12-month ranks and SIC industry aggregates
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS company_metadata (
+                ticker TEXT PRIMARY KEY,
+                name TEXT,
+                description TEXT,
+                sector TEXT,
+                url TEXT,
+                sic_code TEXT,
+                market_cap REAL,
+                fetched_at TEXT
+            )
+        """)
+        for column, definition in (
+            ("sic_code", "TEXT"),
+            ("market_cap", "REAL"),
+            ("fetched_at", "TEXT"),
+        ):
+            try:
+                cur.execute(f"ALTER TABLE company_metadata ADD COLUMN {column} {definition}")
+            except sqlite3.OperationalError:
+                pass
+
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS momentum_ranks (
+                ticker TEXT,
+                date DATE,
+                current_return REAL,
+                last_month_return REAL,
+                last_week_return REAL,
+                current_rank REAL,
+                last_month_rank REAL,
+                rank_change REAL,
+                PRIMARY KEY (ticker, date)
+            )
+        """)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS industry_ranks (
+                sic2 TEXT,
+                date DATE,
+                name TEXT,
+                n_companies INTEGER,
+                market_cap REAL,
+                coverage REAL,
+                current_return REAL,
+                last_month_return REAL,
+                current_rank REAL,
+                last_month_rank REAL,
+                rank_change REAL,
+                PRIMARY KEY (sic2, date)
+            )
+        """)
+
         conn.commit()
         print(f"✅ Database initialized with Streak support at {DB_PATH}")
 

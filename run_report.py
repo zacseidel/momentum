@@ -16,6 +16,12 @@ from prices import PriceService
 from ranking import RankingService
 from report import ReportService
 from build_site import build_website
+from metadata_refresh import (
+    MAX_METADATA_REFRESH,
+    added_tickers_for_date,
+    select_refresh_candidates,
+)
+from sic import load_sic_major_groups
 
 # Config
 REPORT_DIR = Path("reports")
@@ -32,6 +38,25 @@ async def build_report(run_date: date):
     # 3. Prices & Dates
     p_service = PriceService()
     target_dates = await p_service.resolve_target_dates(run_date)
+
+    # 3b. Combined-universe metadata (capped incremental refresh)
+    rep_service = ReportService()
+    combined_tickers = u_service.combined_universe_tickers()
+    existing_meta = rep_service.load_company_metadata()
+    meta_candidates = select_refresh_candidates(
+        existing_meta,
+        combined_tickers,
+        added_tickers_for_date(run_date),
+        limit=MAX_METADATA_REFRESH,
+    )
+    if meta_candidates:
+        print(
+            f"🏷️  Refreshing {len(meta_candidates)} company profiles "
+            f"(cap {MAX_METADATA_REFRESH}/run)..."
+        )
+        await rep_service.upsert_profiles(meta_candidates)
+    else:
+        print("🏷️  Company SIC metadata is current for the combined universe.")
 
     # 4. Ranking & Signal Generation
     r_service = RankingService()
@@ -111,6 +136,25 @@ async def build_report(run_date: date):
         if not picks.empty:
             all_winners.extend(picks["ticker"].tolist())
 
+    # --- C2. Combined-universe industry ranks (S&P 500 + S&P 400) ---
+    print("📊 Processing combined INDUSTRY / RANK-CHANGE page...")
+    combined_prices = await p_service.get_snapshots(combined_tickers, target_dates)
+    combined_ranks = r_service.calculate_ranks(
+        combined_prices, target_dates, require_improving=False
+    )
+    r_service.save_momentum_ranks(combined_ranks, run_date)
+    metadata = rep_service.load_company_metadata(combined_tickers)
+    industry_ranks = r_service.rank_industries(
+        combined_ranks, metadata, load_sic_major_groups()
+    )
+    r_service.save_industry_ranks(industry_ranks, run_date)
+    industry_html = rep_service.generate_industry_html(
+        combined_ranks, industry_ranks, run_date, target_dates
+    )
+    industry_file = REPORT_DIR / f"industry_{run_date.isoformat()}.html"
+    industry_file.write_text(industry_html, encoding="utf-8")
+    print(f"   💾 Industry report: {industry_file}")
+
     # --- D. Chart Data Preparation ---
     # Crucial: Ensure we have full history for ALL winners so charts render
     print(f"📉 Pre-heating chart data for {len(all_winners)} winners...")
@@ -120,7 +164,6 @@ async def build_report(run_date: date):
 
     # 5. Momentum Report (Main HTML)
     print("📝 Generating Momentum HTML...")
-    rep_service = ReportService()
     
     # Prefetch news/metadata
     await rep_service.cache_metadata(list(set(all_winners)))
@@ -130,7 +173,7 @@ async def build_report(run_date: date):
     mom_file = REPORT_DIR / f"momentum_{run_date.isoformat()}.html"
     mom_file.write_text(momentum_html, encoding="utf-8")
     
-    return mom_file
+    return mom_file, industry_file
 
 def main():
     load_dotenv()
@@ -142,10 +185,11 @@ def main():
 
     try:
         # Run Pipeline
-        mom_file = asyncio.run(build_report(run_date))
+        mom_file, industry_file = asyncio.run(build_report(run_date))
         
         print(f"\n✅ SUCCESS!")
         print(f"   Momentum Report: {mom_file.absolute()}")
+        print(f"   Industry Report: {industry_file.absolute()}")
 
         # --- Build the Website ---
         build_website()
