@@ -1264,3 +1264,7 @@ date,cohort,action,symbol
 2026-09-11,sp500,drop,OKE
 2026-09-11,munger,add,IBM
 2026-09-11,munger,drop,AMGN
+2026-09-15,sp500,add,OKE
+2026-09-15,sp500,drop,2682320D
+2026-09-15,munger,add,CRWD
+2026-09-15,munger,drop,LIN
