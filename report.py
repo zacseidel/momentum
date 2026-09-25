@@ -35,7 +35,7 @@ UNIVERSE_LOG_PATH = Path("data/universe/change_log.csv")
 RATE_LIMIT_SLEEP = 13 
 # Card areas in page order, with how many picks from each get a detail card
 # (None = all). Stocks only in other sections link to their card here, if any.
-CARD_COHORTS = [("megalaggards", None), ("sp500", 5), ("sp400", 5), ("rankmom500", None)]
+CARD_COHORTS = [("sp500", 5), ("rankmom500", None), ("megalaggards", None), ("sp400", 5)]
 
 class ReportService:
     def __init__(self, db_path: Path = DB_PATH):
@@ -661,12 +661,16 @@ class ReportService:
             </table>
             {% endif %}
 
+            <h2 id="summary-sp500">🏢 S&P 500 Leaders</h2>
+            {{ spy_summary | safe }}
+
+            <h2 id="summary-rankmom500" style="border-left-color: #16a085;">📶 S&P 500 Rank Momentum</h2>
+            <p style="font-size:0.9em; color:#666;">S&amp;P 500 stocks ranked by 3-, 6-, and 12-month return; these are the ten with the best average rank.</p>
+            {{ rankmom500_summary | safe }}
+
             <h2 id="summary-megalaggards" style="border-left-color: #c0392b;">🐢 Mega Cap Laggards</h2>
             <p style="font-size:0.9em; color:#666;">The 10 largest S&amp;P 500 stocks ranked by 3-, 6-, and 12-month return; these are the three with the worst average rank.</p>
             {{ laggards_summary | safe }}
-
-            <h2 id="summary-sp500">🏢 S&P 500 Leaders</h2>
-            {{ spy_summary | safe }}
 
             <h2 id="summary-sp400">🏭 S&P 400 (MidCap) Leaders</h2>
             {{ mdy_summary | safe }}
@@ -679,10 +683,6 @@ class ReportService:
             <p style="font-size:0.9em; color:#666;">Top 50 stocks that dipped below 200-day avg (last 10d) and recovered above 10-day avg.</p>
             {{ munger_summary | safe }}
             {% endif %}
-
-            <h2 id="summary-rankmom500" style="border-left-color: #16a085;">📶 S&P 500 Rank Momentum</h2>
-            <p style="font-size:0.9em; color:#666;">S&amp;P 500 stocks ranked by 3-, 6-, and 12-month return; these are the ten with the best average rank.</p>
-            {{ rankmom500_summary | safe }}
 
             <h2 id="summary-rankmom400" style="border-left-color: #16a085;">📶 S&P 400 Rank Momentum</h2>
             <p style="font-size:0.9em; color:#666;">S&amp;P 400 stocks ranked by 3-, 6-, and 12-month return; these are the ten with the best average rank.</p>
@@ -698,24 +698,24 @@ class ReportService:
             
             <hr style="margin: 60px 0; border: 0; border-top: 1px solid #eee;">
 
-            {% if laggards_cards %}
-            <h2>🐢 Mega Cap Laggards Details</h2>
-            {{ laggards_cards | safe }}
-            {% endif %}
-
             {% if spy_cards %}
             <h2>🏢 S&P 500 Details</h2>
             {{ spy_cards | safe }}
             {% endif %}
 
-            {% if mdy_cards %}
-            <h2>🏭 S&P 400 Details</h2>
-            {{ mdy_cards | safe }}
-            {% endif %}
-
             {% if rankmom500_cards %}
             <h2>📶 S&P 500 Rank Momentum Details</h2>
             {{ rankmom500_cards | safe }}
+            {% endif %}
+
+            {% if laggards_cards %}
+            <h2>🐢 Mega Cap Laggards Details</h2>
+            {{ laggards_cards | safe }}
+            {% endif %}
+
+            {% if mdy_cards %}
+            <h2>🏭 S&P 400 Details</h2>
+            {{ mdy_cards | safe }}
             {% endif %}
 
             

@@ -55,12 +55,13 @@ class ReportCardTests(unittest.TestCase):
         })
 
         card_ids = re.findall(r'<div id="card-([^"]+)"', html)
-        expected = ["S1", "L1", "L2", "S0", "S2", "S3", "S4",
-                    "M0", "M1", "M2", "M3", "M4", "S7", "R1"]
+        expected = ["S0", "S1", "S2", "S3", "S4", "S7", "R1",
+                    "L1", "L2", "M0", "M1", "M2", "M3", "M4"]
         self.assertEqual(card_ids, expected)
 
         # Charts are only drawn for the cohort that owns each card
-        self.assertEqual(charted["sp500"], {"S0", "S2", "S3", "S4"})
+        self.assertEqual(charted["sp500"], {"S0", "S1", "S2", "S3", "S4"})
+        self.assertEqual(charted["megalaggards"], {"L1", "L2"})
         self.assertEqual(charted["megacap"], set())
 
         # Every link resolves; names without a card anywhere are not linked
