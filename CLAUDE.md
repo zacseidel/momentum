@@ -87,6 +87,8 @@ universe.py → prices.py → ranking.py → report.py → build_site.py
 
 **Polygon free tier rate limiting**: All Polygon requests in `PriceService` pass through one shared 13-second throttle. Broad SP400 history gaps use grouped-daily calls; isolated gaps use ticker-range calls.
 
+**Split repair**: Polygon's `adjusted=true` is relative to fetch time, so rows cached before a split are never restated. Each run, `repair_split_adjustments()` checks Polygon's splits feed since the `sync_state.splits_checked_through` checkpoint, plus local scans for flip-flopping price scales and level jumps across data holes, and replaces each affected ticker's full 2-year history in one transaction. If Polygon's own series has a break (a reused ticker such as BNY), rows before it are dropped. Repairs are logged in `price_repairs`.
+
 **Chart data must be pre-heated**: `chart_module.py` reads strictly from SQLite — it never calls the API. `run_report.py` calls `ensure_history_depth()` for all winners before generating reports to guarantee chart data is available.
 
 **Universe sourcing**: `UniverseService` downloads SSGA ETF holdings (SPY for S&P 500, MDY for S&P 400) as Excel files and parses them dynamically since SSGA doesn't provide a stable API. GOOG/GOOGL are merged into a single combined entry before deriving MegaCap and Munger sub-cohorts.

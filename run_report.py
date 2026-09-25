@@ -39,6 +39,11 @@ async def build_report(run_date: date):
     p_service = PriceService()
     target_dates = await p_service.resolve_target_dates(run_date)
 
+    # 3a. Replace any price histories left inconsistent by stock splits
+    await p_service.repair_split_adjustments(
+        date.fromisoformat(target_dates["latest_trading"])
+    )
+
     # 3b. Combined-universe metadata (capped incremental refresh)
     rep_service = ReportService()
     combined_tickers = u_service.combined_universe_tickers()

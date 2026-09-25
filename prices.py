@@ -3,6 +3,7 @@ import sqlite3
 import asyncio
 import math
 import httpx
+import numpy as np
 import pandas as pd
 from datetime import date, timedelta
 from pathlib import Path
@@ -20,6 +21,63 @@ API_WAIT_SECONDS = 13
 
 if not API_KEY:
     raise RuntimeError("Missing Polygon key. Set POLYGON_API_KEY in .env")
+
+# Polygon's free tier serves ~2 years of daily history.
+HISTORY_REFETCH_DAYS = 730
+SPLIT_REPAIR_COOLDOWN_DAYS = 30
+# A split-contaminated series jumps by >= this factor and jumps straight back.
+FLIP_FACTOR = 1.3
+MIN_FLIPS = 2
+# A jump of this factor across a hole of this many days marks a level break:
+# either a stock rejoining the universe (refetch fills the hole) or a reused
+# ticker (Polygon's own series is discontinuous; older rows are dropped).
+BREAK_FACTOR = 1.5
+BREAK_GAP_DAYS = 14
+
+
+def find_split_contaminated(closes: pd.DataFrame) -> List[str]:
+    """
+    Tickers whose closes flip between two price scales: a large move immediately
+    reversed by a comparable move (e.g. 100 -> 10 -> 100). Genuine gaps rarely
+    round-trip overnight, so MIN_FLIPS of these marks a mixed series.
+    """
+    if closes.empty:
+        return []
+    df = closes.sort_values(["ticker", "date"])
+    log_ret = np.log(df["close"] / df.groupby("ticker")["close"].shift())
+    next_ret = log_ret.groupby(df["ticker"]).shift(-1)
+    threshold = np.log(FLIP_FACTOR)
+    flips = (
+        (log_ret.abs() > threshold)
+        & (next_ret.abs() > threshold)
+        & (np.sign(log_ret) != np.sign(next_ret))
+        & ((log_ret + next_ret).abs() < 0.5 * log_ret.abs())
+    )
+    counts = flips.groupby(df["ticker"]).sum()
+    return sorted(counts[counts >= MIN_FLIPS].index)
+
+
+def _level_breaks(closes: pd.DataFrame) -> pd.Series:
+    """Boolean mask of rows that open a new price level after a long data hole."""
+    df = closes.sort_values(["ticker", "date"])
+    dates = pd.to_datetime(df["date"])
+    gap_days = (dates - dates.groupby(df["ticker"]).shift()).dt.days
+    factor = np.exp(np.log(df["close"] / df.groupby("ticker")["close"].shift()).abs())
+    return (gap_days >= BREAK_GAP_DAYS) & (factor >= BREAK_FACTOR)
+
+
+def find_level_breaks(closes: pd.DataFrame) -> List[str]:
+    if closes.empty:
+        return []
+    df = closes.sort_values(["ticker", "date"])
+    return sorted(set(df.loc[_level_breaks(df), "ticker"]))
+
+
+def drop_before_last_break(closes: pd.DataFrame) -> pd.DataFrame:
+    """For one ticker's series, keep only rows from its last level break onward."""
+    df = closes.sort_values("date").reset_index(drop=True)
+    breaks = df.index[_level_breaks(df)]
+    return df.iloc[breaks[-1]:].reset_index(drop=True) if len(breaks) else df
 
 class PriceService:
     def __init__(self):
@@ -43,6 +101,21 @@ class PriceService:
                 )
             """)
             conn.execute("CREATE INDEX IF NOT EXISTS idx_date ON daily_prices(date)")
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS sync_state (
+                    key   TEXT PRIMARY KEY,
+                    value TEXT
+                )
+            """)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS price_repairs (
+                    ticker      TEXT,
+                    repaired_at TEXT,
+                    reason      TEXT,
+                    rows        INTEGER,
+                    PRIMARY KEY (ticker, repaired_at)
+                )
+            """)
 
     def _load_universe_tickers(self) -> Set[str]:
         """Load Universe + Explicitly Add VOO to whitelist."""
@@ -87,6 +160,70 @@ class PriceService:
                 print(f"   Shape-shift ({label}): Requested {target} -> Found {actual_date}")
 
         return resolved_map
+
+    async def repair_split_adjustments(self, as_of: date) -> List[str]:
+        """
+        Re-download full history for tickers whose cached prices mix split-adjusted
+        and unadjusted closes.
+
+        Polygon's adjusted=true is relative to the fetch date, so rows cached before
+        a split are never restated. Candidates come from (a) Polygon's splits feed
+        since the last check, (b) a local scan for prices that flip back and forth
+        by a split-like factor, and (c) price-level jumps across long data holes
+        (universe re-entry or a reused ticker). Each candidate's rows are replaced
+        wholesale; a break that persists in Polygon's own series is truncated.
+        """
+        with sqlite3.connect(self.db_path) as conn:
+            row = conn.execute(
+                "SELECT value FROM sync_state WHERE key = 'splits_checked_through'"
+            ).fetchone()
+            cached = {r[0] for r in conn.execute("SELECT DISTINCT ticker FROM daily_prices")}
+            recent_repairs = {
+                r[0] for r in conn.execute(
+                    "SELECT DISTINCT ticker FROM price_repairs WHERE repaired_at >= ?",
+                    ((as_of - timedelta(days=SPLIT_REPAIR_COOLDOWN_DAYS)).isoformat(),),
+                )
+            }
+
+        since = date.fromisoformat(row[0]) if row else as_of - timedelta(days=HISTORY_REFETCH_DAYS)
+        print(f"🪓 Checking splits executed {since} → {as_of}...")
+        splits = await self._fetch_splits(since, as_of)
+        if splits is None:
+            print("   ⚠️ Split feed unavailable; will retry next run.")
+            split_tickers = set()
+        else:
+            split_tickers = {s["ticker"] for s in splits if s.get("ticker") in cached}
+
+        # Flip-scan hits already repaired recently are skipped so a series Polygon
+        # itself serves inconsistently can't trigger a refetch on every run.
+        all_closes = self._load_all_closes()
+        flip_tickers = set(find_split_contaminated(all_closes)) - recent_repairs
+        break_tickers = set(find_level_breaks(all_closes)) - recent_repairs
+
+        reasons = {t: "gap" for t in break_tickers}
+        reasons.update({t: "flip" for t in flip_tickers})
+        reasons.update({t: "split" for t in split_tickers})
+        if not reasons:
+            print("   ✅ No split-affected price histories.")
+        else:
+            print(f"   🔧 Refetching {len(reasons)} histories: {sorted(reasons)}")
+
+        failed = []
+        for ticker in sorted(reasons):
+            if not await self._replace_ticker_history(ticker, as_of, reasons[ticker]):
+                failed.append(ticker)
+
+        # Only advance the checkpoint when the feed was read and every split repair
+        # landed; otherwise the same window is re-checked next run.
+        if splits is not None and not (set(failed) & split_tickers):
+            with sqlite3.connect(self.db_path) as conn:
+                conn.execute(
+                    "INSERT OR REPLACE INTO sync_state (key, value) VALUES ('splits_checked_through', ?)",
+                    (as_of.isoformat(),),
+                )
+        if failed:
+            print(f"   ⚠️ Could not repair {failed}; will retry next run.")
+        return sorted(set(reasons) - set(failed))
 
     async def ensure_history_depth(
         self,
@@ -400,6 +537,88 @@ class PriceService:
             except Exception as e:
                 print(f"      🔴 Exception fetching {ticker}: {e}")
                 return False
+
+    async def _fetch_splits(self, since: date, until: date):
+        """All market splits executed in [since, until]; None if the feed fails."""
+        url = (
+            "https://api.polygon.io/v3/reference/splits"
+            f"?execution_date.gte={since}&execution_date.lte={until}"
+            f"&order=asc&sort=execution_date&limit=1000&apiKey={API_KEY}"
+        )
+        splits = []
+        async with httpx.AsyncClient(timeout=20.0) as client:
+            while url:
+                try:
+                    resp = await self._rate_limited_get(client, url)
+                except Exception as e:
+                    print(f"      🔴 Split feed error: {e}")
+                    return None
+                if resp.status_code != 200:
+                    print(f"      🔴 Split feed error: {resp.status_code}")
+                    return None
+                payload = resp.json()
+                splits.extend(payload.get("results", []))
+                next_url = payload.get("next_url")
+                url = f"{next_url}&apiKey={API_KEY}" if next_url else None
+        return splits
+
+    async def _replace_ticker_history(self, ticker: str, as_of: date, reason: str) -> bool:
+        """Swap a ticker's cached rows for one consistently adjusted download."""
+        start = as_of - timedelta(days=HISTORY_REFETCH_DAYS)
+        url = (
+            f"https://api.polygon.io/v2/aggs/ticker/{ticker}/range/1/day/{start}/{as_of}"
+            f"?adjusted=true&sort=asc&limit=50000&apiKey={API_KEY}"
+        )
+        async with httpx.AsyncClient(timeout=20.0) as client:
+            try:
+                resp = await self._rate_limited_get(client, url)
+            except Exception as e:
+                print(f"      🔴 {ticker}: refetch failed ({e})")
+                return False
+        if resp.status_code != 200:
+            print(f"      🔴 {ticker}: refetch failed ({resp.status_code})")
+            return False
+        results = resp.json().get("results", [])
+        if not results:
+            print(f"      ⚠️ {ticker}: refetch returned no rows; keeping cached data")
+            return False
+
+        fresh = pd.DataFrame([
+            {
+                "ticker": ticker,
+                "date": pd.to_datetime(r.get("t"), unit="ms").date().isoformat(),
+                "open": r.get("o"), "high": r.get("h"), "low": r.get("l"),
+                "close": r.get("c"), "volume": r.get("v"),
+            }
+            for r in results
+        ])
+        kept = drop_before_last_break(fresh)
+        if len(kept) < len(fresh):
+            print(
+                f"      ✂️ {ticker}: Polygon series breaks at {kept['date'].iloc[0]} "
+                f"(likely a reused ticker); dropping {len(fresh) - len(kept)} earlier rows"
+            )
+            reason = f"{reason}+truncated"
+        rows = list(kept[["ticker", "date", "open", "high", "low", "close", "volume"]].itertuples(index=False, name=None))
+        with sqlite3.connect(self.db_path) as conn:
+            # One transaction: older unadjusted rows go too, so no stale jump survives.
+            conn.execute("DELETE FROM daily_prices WHERE ticker = ?", (ticker,))
+            conn.executemany("""
+                INSERT OR REPLACE INTO daily_prices (ticker, date, open, high, low, close, volume)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, rows)
+            conn.execute(
+                "INSERT OR REPLACE INTO price_repairs (ticker, repaired_at, reason, rows) VALUES (?, ?, ?, ?)",
+                (ticker, as_of.isoformat(), reason, len(rows)),
+            )
+        print(f"      💾 {ticker}: replaced history with {len(rows)} adjusted rows ({reason})")
+        return True
+
+    def _load_all_closes(self) -> pd.DataFrame:
+        with sqlite3.connect(self.db_path) as conn:
+            return pd.read_sql_query(
+                "SELECT ticker, date, close FROM daily_prices ORDER BY ticker, date", conn
+            )
 
     async def _fetch_polygon_grouped(self, d: date) -> List[dict]:
         url = f"https://api.polygon.io/v2/aggs/grouped/locale/us/market/stocks/{d}?adjusted=true&apiKey={API_KEY}"
