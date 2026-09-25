@@ -33,6 +33,9 @@ UNIVERSE_LOG_PATH = Path("data/universe/change_log.csv")
 
 # The Safety Valve: Seconds to wait between Polygon calls
 RATE_LIMIT_SLEEP = 13 
+# Card areas in page order, with how many picks from each get a detail card
+# (None = all). Stocks only in other sections link to their card here, if any.
+CARD_COHORTS = [("megalaggards", None), ("sp500", 5), ("sp400", 5), ("rankmom500", None)]
 
 class ReportService:
     def __init__(self, db_path: Path = DB_PATH):
@@ -293,24 +296,41 @@ class ReportService:
         universe_changes = self._get_universe_changes(run_date)
         
         sections = {} 
-        
-        # We need to process 'munger' differently if it exists, or just loop through all
+
+        # Each ticker gets one detail card, in the first card area that lists it;
+        # summary links in every section point at that card.
+        card_owners = {}
+        for cohort, limit in CARD_COHORTS:
+            df = top_picks.get(cohort)
+            if df is None or df.empty:
+                continue
+            for ticker in df["ticker"].head(limit):
+                card_owners.setdefault(ticker, cohort)
+        anchors = {ticker: f"card-{ticker}" for ticker in card_owners}
+
         for cohort, df in top_picks.items():
             if df.empty:
                 sections[cohort] = {"summary": "<p style='color:#777; font-style:italic;'>No active signals this week.</p>", "cards": ""}
                 continue
             
-            enriched_df = self._enrich_data(df, cohort, target_dates)
+            card_tickers = {t for t, owner in card_owners.items() if owner == cohort}
+            enriched_df = self._enrich_data(df, cohort, target_dates, chart_tickers=card_tickers)
             dropped_list = self._get_dropped_tickers(cohort, df["ticker"].tolist(), run_date)
             dropped_stats = self._get_dropped_stats(dropped_list, target_dates)
             
-            summary_html, cards_html = self._render_cohort(enriched_df, dropped_stats, cohort)
+            summary_html, cards_html = self._render_cohort(
+                enriched_df, dropped_stats, cohort, anchors=anchors, card_tickers=card_tickers
+            )
             sections[cohort] = {"summary": summary_html, "cards": cards_html}
 
         return self._render_master_template(sections, run_date, voo_stats, universe_changes)
 
-    def _enrich_data(self, df: pd.DataFrame, cohort: str, target_dates: dict, as_of: str | None = None) -> list[dict]:
-        """as_of (YYYY-MM-DD) renders charts, MA dots and news as of a past report date."""
+    def _enrich_data(
+        self, df: pd.DataFrame, cohort: str, target_dates: dict,
+        as_of: str | None = None, chart_tickers: set | None = None,
+    ) -> list[dict]:
+        """as_of (YYYY-MM-DD) renders charts, MA dots and news as of a past report date.
+        chart_tickers limits chart rendering to those tickers (None = all)."""
         tickers = df["ticker"].tolist()
         
         with sqlite3.connect(self.db_path) as conn:
@@ -347,7 +367,7 @@ class ReportService:
             name_text = info.get("name") or t
             
             chart_uri = ""
-            if plot_stock_chart:
+            if plot_stock_chart and (chart_tickers is None or t in chart_tickers):
                 fig = None
                 try:
                     # print(f"   📈 Generating chart for {t}...")
@@ -390,7 +410,14 @@ class ReportService:
             
         return enriched
 
-    def _render_cohort(self, stocks: list[dict], dropped_stats: list[dict], cohort: str, link_cards: bool = True) -> tuple[str, str]:
+    def _render_cohort(
+        self, stocks: list[dict], dropped_stats: list[dict], cohort: str,
+        anchors: dict | None = None, card_tickers: set | None = None,
+    ) -> tuple[str, str]:
+        """anchors maps ticker -> card id to link to (default: this cohort's own cards).
+        card_tickers limits which stocks get a card here (None = all)."""
+        if anchors is None:
+            anchors = {s["ticker"]: f"{cohort}-{s['ticker']}" for s in stocks}
         # 1. Active Summary
         summary_lines = []
         for i, s in enumerate(stocks):
@@ -405,8 +432,8 @@ class ReportService:
             # Separate the two worst laggards from the third
             if cohort == "megalaggards" and i == 2:
                 summary_lines.append("<div style='margin:8px 0; border-top:2px solid #bbb;'></div>")
-            anchor = f"{cohort}-{s['ticker']}"
-            href = f'href="#{anchor}"' if link_cards else ""
+            anchor = anchors.get(s["ticker"])
+            href = f'href="#{anchor}"' if anchor else ""
             streak_color = "#006400" if "since" in s['streak_html'] else "#0000FF"
             
             if cohort == "munger":
@@ -475,7 +502,7 @@ class ReportService:
         # 3. Detailed Cards
         # We use a single template with conditional logic inside
         card_tpl = Template("""
-        <div id="{{ cohort }}-{{ ticker }}" style="border-bottom: 2px solid #eee; padding: 30px 0;">
+        <div id="{{ anchor }}" style="border-bottom: 2px solid #eee; padding: 30px 0;">
             <div style="display:flex; justify-content:space-between; align-items:baseline;">
                 <h3 style="margin:0; font-size: 1.4em; color:#222;">
                     {{ ma_dots|default('') }}{{ ticker }} <span style="font-weight:normal; color:#555;">— {{ name }}</span> <span style="color:#333;">{{ price }}</span>
@@ -548,7 +575,10 @@ class ReportService:
         </div>
         """)
         
-        cards_html = "\n".join([card_tpl.render(**s) for s in stocks])
+        cards_html = "\n".join(
+            card_tpl.render(**s, anchor=anchors[s["ticker"]])
+            for s in stocks if card_tickers is None or s["ticker"] in card_tickers
+        )
         return summary_html, cards_html
 
     def _render_master_template(self, sections, run_date, voo_stats, universe_changes):
@@ -673,18 +703,14 @@ class ReportService:
             {{ laggards_cards | safe }}
             {% endif %}
 
+            {% if spy_cards %}
             <h2>🏢 S&P 500 Details</h2>
             {{ spy_cards | safe }}
+            {% endif %}
 
+            {% if mdy_cards %}
             <h2>🏭 S&P 400 Details</h2>
             {{ mdy_cards | safe }}
-
-            <h2>💎 Mega Cap Details</h2>
-            {{ mega_cards | safe }}
-
-            {% if munger_cards %}
-            <h2>🧠 Munger Details</h2>
-            {{ munger_cards | safe }}
             {% endif %}
 
             {% if rankmom500_cards %}
@@ -692,20 +718,6 @@ class ReportService:
             {{ rankmom500_cards | safe }}
             {% endif %}
 
-            {% if rankmom400_cards %}
-            <h2>📶 S&P 400 Rank Momentum Details</h2>
-            {{ rankmom400_cards | safe }}
-            {% endif %}
-
-            {% if munger400l_cards %}
-            <h2>🏛️ Munger400L Details</h2>
-            {{ munger400l_cards | safe }}
-            {% endif %}
-
-            {% if munger400r_cards %}
-            <h2>↩️ Munger400R Details</h2>
-            {{ munger400r_cards | safe }}
-            {% endif %}
             
             <div style="text-align:center; margin-top:80px; color:#999; font-size:0.8em;">
                 Generated by Python Momentum Engine • {{ date }}
