@@ -153,13 +153,14 @@ def _ema_addplots(close: pd.Series) -> list:
     return addplots
 
 
-def plot_stock_chart(ticker: str, save_path: str = None, benchmark_ticker="VOO") -> Tuple:
+def plot_stock_chart(ticker: str, save_path: str = None, benchmark_ticker="VOO", as_of: Optional[str] = None) -> Tuple:
     """
     Generates a candle chart with VOO overlay using LOCAL DATA.
+    as_of (YYYY-MM-DD) ends the chart on that date instead of today.
     Returns: (fig, axes) tuple.
     """
     # 1. Get Data from DB
-    df = _fetch_history_from_db(ticker)
+    df = _fetch_history_from_db(ticker, as_of=as_of)
     
     # Safety: If data is sparse (e.g. only 2 momentum snapshots), we can't chart it.
     # The orchestrator (run_report.py) must ensure 'ensure_history_depth' was called first.
@@ -167,7 +168,7 @@ def plot_stock_chart(ticker: str, save_path: str = None, benchmark_ticker="VOO")
         print(f"⚠️ Skipping chart for {ticker}: Not enough history in DB ({len(df)} rows).")
         return None, None
     
-    bench = _fetch_history_from_db(benchmark_ticker)
+    bench = _fetch_history_from_db(benchmark_ticker, as_of=as_of)
     
     # 2. Align Benchmark (Normalize VOO to start at Ticker's price)
     addplots = []

@@ -309,12 +309,15 @@ class ReportService:
 
         return self._render_master_template(sections, run_date, voo_stats, universe_changes)
 
-    def _enrich_data(self, df: pd.DataFrame, cohort: str, target_dates: dict) -> list[dict]:
+    def _enrich_data(self, df: pd.DataFrame, cohort: str, target_dates: dict, as_of: str | None = None) -> list[dict]:
+        """as_of (YYYY-MM-DD) renders charts, MA dots and news as of a past report date."""
         tickers = df["ticker"].tolist()
         
         with sqlite3.connect(self.db_path) as conn:
             meta = pd.read_sql(f"SELECT * FROM company_metadata WHERE ticker IN ({','.join(['?']*len(tickers))})", conn, params=tickers)
             news = pd.read_sql(f"SELECT * FROM company_news WHERE ticker IN ({','.join(['?']*len(tickers))}) ORDER BY published_utc DESC", conn, params=tickers)
+            if as_of:
+                news = news[news["published_utc"].str[:10] <= as_of]
             
             # For prices, we might need them, but Munger/Momentum might already have price in the DF
             latest_date = target_dates["latest_trading"]
@@ -348,7 +351,7 @@ class ReportService:
                 fig = None
                 try:
                     # print(f"   📈 Generating chart for {t}...")
-                    fig, _ = plot_stock_chart(t, save_path=None)
+                    fig, _ = plot_stock_chart(t, save_path=None, as_of=as_of)
                     if fig:
                         buf = io.BytesIO()
                         fig.savefig(buf, format="png", dpi=100, bbox_inches="tight")
@@ -369,7 +372,7 @@ class ReportService:
                 streak_html = f"✨ <strong>New Entrant</strong>"
 
             if ma_signals_for_ticker and render_ma_dots:
-                ma_dots = render_ma_dots(ma_signals_for_ticker(t))
+                ma_dots = render_ma_dots(ma_signals_for_ticker(t, as_of=as_of))
             else:
                 ma_dots = ""
 
@@ -399,6 +402,9 @@ class ReportService:
                     "<span style='flex:1; border-top:2px solid #bbb;'></span>Bottom 5"
                     "<span style='flex:1; border-top:2px solid #bbb;'></span></div>"
                 )
+            # Separate the two worst laggards from the third
+            if cohort == "megalaggards" and i == 2:
+                summary_lines.append("<div style='margin:8px 0; border-top:2px solid #bbb;'></div>")
             anchor = f"{cohort}-{s['ticker']}"
             href = f'href="#{anchor}"' if link_cards else ""
             streak_color = "#006400" if "since" in s['streak_html'] else "#0000FF"
@@ -662,24 +668,6 @@ class ReportService:
             
             <hr style="margin: 60px 0; border: 0; border-top: 1px solid #eee;">
 
-            {% if munger_cards %}
-            <h2>🧠 Munger Details</h2>
-            {{ munger_cards | safe }}
-            {% endif %}
-
-            {% if munger400l_cards %}
-            <h2>🏛️ Munger400L Details</h2>
-            {{ munger400l_cards | safe }}
-            {% endif %}
-
-            {% if munger400r_cards %}
-            <h2>↩️ Munger400R Details</h2>
-            {{ munger400r_cards | safe }}
-            {% endif %}
-
-            <h2>💎 Mega Cap Details</h2>
-            {{ mega_cards | safe }}
-
             {% if laggards_cards %}
             <h2>🐢 Mega Cap Laggards Details</h2>
             {{ laggards_cards | safe }}
@@ -691,6 +679,14 @@ class ReportService:
             <h2>🏭 S&P 400 Details</h2>
             {{ mdy_cards | safe }}
 
+            <h2>💎 Mega Cap Details</h2>
+            {{ mega_cards | safe }}
+
+            {% if munger_cards %}
+            <h2>🧠 Munger Details</h2>
+            {{ munger_cards | safe }}
+            {% endif %}
+
             {% if rankmom500_cards %}
             <h2>📶 S&P 500 Rank Momentum Details</h2>
             {{ rankmom500_cards | safe }}
@@ -699,6 +695,16 @@ class ReportService:
             {% if rankmom400_cards %}
             <h2>📶 S&P 400 Rank Momentum Details</h2>
             {{ rankmom400_cards | safe }}
+            {% endif %}
+
+            {% if munger400l_cards %}
+            <h2>🏛️ Munger400L Details</h2>
+            {{ munger400l_cards | safe }}
+            {% endif %}
+
+            {% if munger400r_cards %}
+            <h2>↩️ Munger400R Details</h2>
+            {{ munger400r_cards | safe }}
             {% endif %}
             
             <div style="text-align:center; margin-top:80px; color:#999; font-size:0.8em;">

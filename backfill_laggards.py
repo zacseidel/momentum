@@ -4,7 +4,8 @@ One-off backfill: add the Mega Cap Laggards summary to existing momentum reports
 
 Walks report dates oldest -> newest, computes picks from cached SQLite prices
 (no API calls), saves them to top10_megalaggards so streaks/drops chain
-correctly, and inserts a summary-only section into each report's HTML.
+correctly, and inserts the summary plus linked detail cards (charts, MA dots and
+news as of the report date) into each report's HTML.
 
 Top-10 membership per date:
   * On/after the first git snapshot of megacap.csv: exact SPY weights from git.
@@ -23,7 +24,6 @@ from pathlib import Path
 
 import pandas as pd
 
-from chart_module import ma_signals_for_ticker, render_ma_dots
 from ranking import RankingService
 from report import ReportService
 from universe import UniverseService
@@ -33,6 +33,9 @@ REPORTS_DIR = Path("reports")
 START_MARK = "<!-- megalaggards:start -->"
 END_MARK = "<!-- megalaggards:end -->"
 SP500_ANCHOR = '<h2 id="summary-sp500">'
+CARDS_START = "<!-- megalaggards-cards:start -->"
+CARDS_END = "<!-- megalaggards-cards:end -->"
+SP500_CARDS_ANCHOR = "<h2>🏢 S&P 500 Details</h2>"
 
 DOT_CSS = """<style>
     .ma-dots { display: inline-flex; gap: 3px; margin-right: 6px; vertical-align: middle; }
@@ -138,6 +141,17 @@ def build_section(summary_html: str, add_legend: bool) -> str:
             """
 
 
+def insert_block(html: str, start: str, end: str, block: str, anchor: str) -> str:
+    """Replace the marked block if present, else insert it before anchor."""
+    section = f"{start}{block}            {end}\n\n            "
+    if start in html:
+        pattern = re.escape(start) + r".*?" + re.escape(end) + r"\s*"
+        return re.sub(pattern, lambda _: section, html, count=1, flags=re.S)
+    if anchor not in html:
+        raise RuntimeError(f"Anchor not found: {anchor}")
+    return html.replace(anchor, section + anchor, 1)
+
+
 def insert_section(html: str, section: str) -> str:
     if START_MARK in html:
         pattern = re.escape(START_MARK) + r".*?" + re.escape(END_MARK) + r"\s*"
@@ -198,33 +212,20 @@ def main():
         picks = ranking.process_megacap_laggards(ranks, run_date)
         if picks.empty:
             raise RuntimeError(f"No laggard picks for {run_date}")
-        with sqlite3.connect(DB_PATH) as conn:
-            closes = dict(conn.execute(
-                f"SELECT ticker, close FROM daily_prices WHERE date = ? AND ticker IN ({','.join('?' * len(picks))})",
-                [dates["latest_trading"]] + picks["ticker"].tolist(),
-            ).fetchall())
-
-        stocks = []
-        for _, row in picks.iterrows():
-            ticker = row["ticker"]
-            streak_html = (
-                f"🔥 <strong>since {row['streak_start']}</strong>" if row["streak"] > 1
-                else "✨ <strong>New Entrant</strong>"
-            )
-            stocks.append({
-                **row.to_dict(),
-                "price": f"${closes.get(ticker, 0.0):.2f}",
-                "streak_html": streak_html,
-                "ma_dots": render_ma_dots(ma_signals_for_ticker(ticker, as_of=dates["latest_trading"])),
-            })
-
+        stocks = reporter._enrich_data(picks, "megalaggards", dates, as_of=dates["latest_trading"])
         dropped = reporter._get_dropped_tickers("megalaggards", picks["ticker"].tolist(), run_date)
         dropped_stats = reporter._get_dropped_stats(dropped, dates)
-        summary_html, _ = reporter._render_cohort(stocks, dropped_stats, "megalaggards", link_cards=False)
+        summary_html, cards_html = reporter._render_cohort(stocks, dropped_stats, "megalaggards")
+        cards = f"""
+            <h2>🐢 Mega Cap Laggards Details</h2>
+            {cards_html}
+"""
 
         html = path.read_text(encoding="utf-8")
         has_legend = 'class="ma-legend"' in html
-        path.write_text(insert_section(html, build_section(summary_html, not has_legend)), encoding="utf-8")
+        html = insert_section(html, build_section(summary_html, not has_legend))
+        html = insert_block(html, CARDS_START, CARDS_END, cards, SP500_CARDS_ANCHOR)
+        path.write_text(html, encoding="utf-8")
         print(f"   ✏️  {path.name} [{source}] {picks['ticker'].tolist()} dropped={dropped}")
 
 

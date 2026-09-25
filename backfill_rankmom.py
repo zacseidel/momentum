@@ -8,7 +8,8 @@ pipeline does (fetching a grouped-daily snapshot for any 3/6-month date that was
 never cached in full), rebuilds each index's membership on that date by
 replaying data/universe/change_log.csv, saves picks to top10_rankmom500 /
 top10_rankmom400 so streaks and drops chain correctly, and inserts summary-only
-sections into each report's HTML.
+sections plus linked detail cards (charts, MA dots and news as of the report
+date) into each report's HTML.
 
 Usage: python backfill_rankmom.py [START_DATE] [--dry-run]
 """
@@ -22,8 +23,7 @@ from pathlib import Path
 import pandas as pd
 from dotenv import load_dotenv
 
-from backfill_laggards import DOT_CSS, DOT_LEGEND
-from chart_module import ma_signals_for_ticker, render_ma_dots
+from backfill_laggards import DOT_CSS, DOT_LEGEND, insert_block
 from prices import PriceService
 from ranking import RANK_MOMENTUM_COHORTS, RankingService
 from report import ReportService
@@ -34,6 +34,9 @@ CHANGE_LOG = Path("data/universe/change_log.csv")
 START_MARK = "<!-- rankmom:start -->"
 END_MARK = "<!-- rankmom:end -->"
 MEGACAP_ANCHOR = '<h2 id="summary-megacap">'
+CARDS_START = "<!-- rankmom-cards:start -->"
+CARDS_END = "<!-- rankmom-cards:end -->"
+FOOTER_ANCHOR = '<div style="text-align:center; margin-top:'
 TITLES = {"rankmom500": "S&amp;P 500", "rankmom400": "S&amp;P 400"}
 
 
@@ -85,32 +88,16 @@ def insert_section(html: str, section: str) -> str:
     return html
 
 
-def render_summary(reporter, picks, cohort, dates, run_date) -> tuple[str, list]:
-    with sqlite3.connect(DB_PATH) as conn:
-        closes = dict(conn.execute(
-            f"SELECT ticker, close FROM daily_prices WHERE date = ? "
-            f"AND ticker IN ({','.join('?' * len(picks))})",
-            [dates["latest_trading"]] + picks["ticker"].tolist(),
-        ).fetchall())
-
-    stocks = []
-    for _, row in picks.iterrows():
-        ticker = row["ticker"]
-        streak_html = (
-            f"🔥 <strong>since {row['streak_start']}</strong>" if row["streak"] > 1
-            else "✨ <strong>New Entrant</strong>"
-        )
-        stocks.append({
-            **row.to_dict(),
-            "price": f"${closes.get(ticker, 0.0):.2f}",
-            "streak_html": streak_html,
-            "ma_dots": render_ma_dots(ma_signals_for_ticker(ticker, as_of=dates["latest_trading"])),
-        })
-
+def render_cohort(reporter, picks, cohort, dates, run_date) -> tuple[str, str, list]:
+    stocks = reporter._enrich_data(picks, cohort, dates, as_of=dates["latest_trading"])
     dropped = reporter._get_dropped_tickers(cohort, picks["ticker"].tolist(), run_date)
     dropped_stats = reporter._get_dropped_stats(dropped, dates)
-    summary_html, _ = reporter._render_cohort(stocks, dropped_stats, cohort, link_cards=False)
-    return summary_html, dropped
+    summary_html, cards_html = reporter._render_cohort(stocks, dropped_stats, cohort)
+    cards = f"""
+            <h2>📶 {TITLES[cohort]} Rank Momentum Details</h2>
+            {cards_html}
+"""
+    return summary_html, cards, dropped
 
 
 async def main():
@@ -137,6 +124,7 @@ async def main():
         dates = await prices_service.resolve_target_dates(run_date)
 
         summaries = {}
+        cards = []
         for cohort, index_cohort in RANK_MOMENTUM_COHORTS.items():
             tickers = members_on(log, index_cohort, run_date.isoformat())
             ranks = ranking.rank_rank_momentum(
@@ -150,7 +138,8 @@ async def main():
             picks = ranking.process_rank_momentum(ranks, cohort, run_date)
             if picks.empty:
                 raise RuntimeError(f"No {cohort} picks for {run_date}")
-            summaries[cohort], dropped = render_summary(reporter, picks, cohort, dates, run_date)
+            summaries[cohort], cohort_cards, dropped = render_cohort(reporter, picks, cohort, dates, run_date)
+            cards.append(cohort_cards)
             print(f"   ✏️  {path.name} {cohort} n={picks['universe_size'].iloc[0]}/{len(tickers)} "
                   f"{picks['ticker'].tolist()} dropped={dropped}")
 
@@ -158,7 +147,9 @@ async def main():
             continue
         html = path.read_text(encoding="utf-8")
         has_legend = 'class="ma-legend"' in html or "10-day EMA, 21-day EMA" in html
-        path.write_text(insert_section(html, build_section(summaries, not has_legend)), encoding="utf-8")
+        html = insert_section(html, build_section(summaries, not has_legend))
+        html = insert_block(html, CARDS_START, CARDS_END, "".join(cards), FOOTER_ANCHOR)
+        path.write_text(html, encoding="utf-8")
 
 
 if __name__ == "__main__":
