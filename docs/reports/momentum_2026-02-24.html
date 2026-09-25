@@ -38,7 +38,14 @@
                 
                 @keyframes fadeIn { from {opacity: 0;} to {opacity: 1;} }
             </style>
-        </head>
+        <style>
+    .ma-dots { display: inline-flex; gap: 3px; margin-right: 6px; vertical-align: middle; }
+    .ma-dot { width: 0.7em; height: 0.7em; border-radius: 50%; display: inline-block; border: 1px solid rgba(0,0,0,.18); }
+    .ma-dot.above { background: #1b8a3a; }
+    .ma-dot.below { background: #c42020; }
+    .ma-dot.unknown { background: #ccc; }
+</style>
+</head>
         <body>
             <div style="margin-bottom: 10px;">
                 <a href="../index.html" style="text-decoration:none; color:#0066cc; font-size:0.9em;">&larr; Back to Dashboard</a>
@@ -218,6 +225,39 @@
                     </span>
                 </div>
             <div style='margin-top:10px; padding-top:10px; border-top:1px dashed #ccc; color:#888; font-size:0.9em;'><strong>Dropped:</strong> GOOGL (73.4%, <span style='color:#006400'>+1.9%</span>), JNJ (51.5%, <span style='color:#006400'>+1.0%</span>)</div>
+
+            <!-- megalaggards:start -->
+            <h2 id="summary-megalaggards" style="border-left-color: #c0392b;">🐢 Mega Cap Laggards</h2>
+            <p style="font-size:0.9em; color:#666;">The 10 largest S&amp;P 500 stocks ranked by 3-, 6-, and 12-month return; these are the three with the worst average rank. Dots (left to right): 10-day EMA, 21-day EMA, 50-day SMA as of the report date; green = last close at or above, red = below.</p>
+            
+                <div style="margin-bottom: 4px;">
+                    <a  style="text-decoration:none; font-weight:bold; color:#006400;">
+                        <span class="ma-dots"><span class="ma-dot below" title="10d EMA: last close below"></span><span class="ma-dot below" title="21d EMA: last close below"></span><span class="ma-dot below" title="50d SMA: last close below"></span></span>MSFT
+                    </a> 
+                    <span style="color:#555;">
+                        ($384.47 | 3M -18.6% / 6M -24.2% / 12M -5.8% | Avg Rank 9.7 of 10) - 🔥 <strong>since 2026-01-20</strong>
+                    </span>
+                </div>
+            
+                <div style="margin-bottom: 4px;">
+                    <a  style="text-decoration:none; font-weight:bold; color:#006400;">
+                        <span class="ma-dots"><span class="ma-dot below" title="10d EMA: last close below"></span><span class="ma-dot below" title="21d EMA: last close below"></span><span class="ma-dot below" title="50d SMA: last close below"></span></span>AMZN
+                    </a> 
+                    <span style="color:#555;">
+                        ($205.27 | 3M -7.0% / 6M -10.3% / 12M -5.2% | Avg Rank 8.3 of 10) - 🔥 <strong>since 2026-02-06</strong>
+                    </span>
+                </div>
+            
+                <div style="margin-bottom: 4px;">
+                    <a  style="text-decoration:none; font-weight:bold; color:#006400;">
+                        <span class="ma-dots"><span class="ma-dot below" title="10d EMA: last close below"></span><span class="ma-dot below" title="21d EMA: last close below"></span><span class="ma-dot below" title="50d SMA: last close below"></span></span>BRK.B
+                    </a> 
+                    <span style="color:#555;">
+                        ($494.09 | 3M -2.0% / 6M 1.0% / 12M 3.2% | Avg Rank 7.0 of 10) - 🔥 <strong>since 2026-02-20</strong>
+                    </span>
+                </div>
+            
+            <!-- megalaggards:end -->
 
             <h2 id="summary-sp500">🏢 S&P 500 Leaders</h2>
             

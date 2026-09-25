@@ -57,6 +57,10 @@ universe.py → prices.py → ranking.py → report.py → build_site.py
 - Ranks by 12-month return, filtered to stocks where rank is improving or steady vs. last month
 - Picks Top 5 per cohort
 
+**Mega Cap Laggards** (cohort: `megalaggards`, report-only):
+- Takes the 10 largest S&P 500 names by SPY weight (from `megacap.csv`) and ranks them by 3-, 6- and 12-month return
+- Picks the 3 with the worst average rank; ties go to the lower 12-month return
+
 **Munger Engine** (cohort: `munger`, Top 50 by market cap):
 - Signal: price dipped below SMA-200 within the last 10 trading days AND has recovered above SMA-10
 - Requires 300+ days of continuous history per ticker (fetched by `ensure_history_depth`)

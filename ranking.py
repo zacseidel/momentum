@@ -267,6 +267,90 @@ class RankingService:
         results.insert(0, "rank", results.index + 1)
         return results
 
+    def rank_megacap_laggards(
+        self,
+        candidates_df: pd.DataFrame,
+        prices_df: pd.DataFrame,
+        date_map: Dict[str, str],
+        universe_size: int = 10,
+        pick_count: int = 3,
+    ) -> pd.DataFrame:
+        """
+        Rank the largest S&P 500 names by 3/6/12-month return (1 = best) and
+        return the ones with the worst (highest) average rank.
+        """
+        if candidates_df.empty or prices_df.empty:
+            return pd.DataFrame()
+
+        largest = (
+            candidates_df.sort_values("weight", ascending=False)
+            .head(universe_size)[["symbol", "weight"]]
+            .rename(columns={"symbol": "ticker"})
+            .set_index("ticker")
+        )
+
+        pivoted = prices_df.pivot(index="ticker", columns="date", values="close")
+        periods = {
+            "3m": "minus_3_months",
+            "6m": "minus_6_months",
+            "12m": "minus_1_year",
+        }
+        now_col = date_map["latest_trading"]
+        missing_cols = [
+            date_map[key] for key in ["latest_trading", *periods.values()]
+            if date_map[key] not in pivoted.columns
+        ]
+        if missing_cols:
+            print(f"❌ Laggard Ranking Error: Missing price columns {missing_cols}")
+            return pd.DataFrame()
+
+        df = largest.copy()
+        for label, key in periods.items():
+            base = pivoted[date_map[key]].reindex(df.index)
+            df[f"return_{label}"] = pivoted[now_col].reindex(df.index) / base - 1
+
+        missing = df[df.isna().any(axis=1)].index.tolist()
+        if missing:
+            print(f"   ⚠️ Laggards: skipping {missing} (missing price history)")
+            df = df.dropna()
+        if df.empty:
+            return pd.DataFrame()
+
+        for label in periods:
+            df[f"rank_{label}"] = df[f"return_{label}"].rank(ascending=False, method="min")
+        df["avg_rank"] = df[[f"rank_{label}" for label in periods]].mean(axis=1)
+        df["universe_size"] = len(df)
+
+        # Worst average rank first; the weaker 12-month return breaks ties.
+        df = df.reset_index().sort_values(
+            ["avg_rank", "return_12m"], ascending=[False, True]
+        ).head(pick_count).reset_index(drop=True)
+        df.insert(0, "rank", df.index + 1)
+        return df
+
+    def process_megacap_laggards(self, picks_df: pd.DataFrame, run_date: date) -> pd.DataFrame:
+        """Persist and format the Mega Cap Laggards cohort."""
+        cohort = "megalaggards"
+        self._ensure_megacap_laggards_table()
+        if picks_df.empty:
+            self._delete_run_date(cohort, run_date)
+            print("⚠️  No Mega Cap Laggards found.")
+            return pd.DataFrame()
+
+        persisted = self._calculate_streaks(picks_df.copy(), cohort, run_date)
+        persisted["date"] = run_date.isoformat()
+        self._save_to_db(persisted, cohort, run_date)
+
+        display_df = persisted.copy()
+        for column in ["return_3m", "return_6m", "return_12m"]:
+            display_df[column] = display_df[column].apply(lambda value: f"{value:.1%}")
+        for column in ["rank_3m", "rank_6m", "rank_12m"]:
+            display_df[column] = display_df[column].astype(int)
+        display_df["avg_rank"] = display_df["avg_rank"].apply(lambda value: f"{value:.1f}")
+
+        print(f"   💾 Saved {len(display_df)} Mega Cap Laggard picks.")
+        return display_df
+
     def process_munger400_picks(
         self, picks_df: pd.DataFrame, cohort: str, run_date: date
     ) -> pd.DataFrame:
@@ -567,6 +651,28 @@ class RankingService:
                     pct_below_200 REAL,
                     dip_date DATE,
                     {extra_columns}
+                    streak INTEGER DEFAULT 1,
+                    streak_start DATE,
+                    date DATE,
+                    PRIMARY KEY (ticker, date)
+                )
+            """)
+
+    def _ensure_megacap_laggards_table(self):
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS top10_megalaggards (
+                    rank INTEGER,
+                    ticker TEXT,
+                    weight REAL,
+                    return_3m REAL,
+                    return_6m REAL,
+                    return_12m REAL,
+                    rank_3m REAL,
+                    rank_6m REAL,
+                    rank_12m REAL,
+                    avg_rank REAL,
+                    universe_size INTEGER,
                     streak INTEGER DEFAULT 1,
                     streak_start DATE,
                     date DATE,

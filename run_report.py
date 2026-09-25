@@ -81,6 +81,17 @@ async def build_report(run_date: date):
         if not top_10.empty:
             all_winners.extend(top_10['ticker'].tolist())
 
+    # --- A2. Mega Cap Laggards (Top 10 by weight, worst avg 3/6/12M rank) ---
+    print("📊 Processing MEGA CAP LAGGARDS...")
+    megacap_df = u_service.get_cohort("megacap")
+    laggard_tickers = megacap_df['symbol'].tolist()
+    laggard_prices = await p_service.get_snapshots(laggard_tickers, target_dates)
+    laggard_ranks = r_service.rank_megacap_laggards(megacap_df, laggard_prices, target_dates)
+    laggard_picks = r_service.process_megacap_laggards(laggard_ranks, run_date)
+    top_picks["megalaggards"] = laggard_picks
+    if not laggard_picks.empty:
+        all_winners.extend(laggard_picks['ticker'].tolist())
+
     # --- B. Munger Strategy (Top 50 Market Cap Reversion) ---
     print(f"📊 Processing MUNGER STRATEGY...")
     munger_candidates = u_service.get_cohort("munger")

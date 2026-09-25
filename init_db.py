@@ -90,6 +90,26 @@ def initialize_database():
             )
         """)
 
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS top10_megalaggards (
+                rank INTEGER,
+                ticker TEXT,
+                weight REAL,
+                return_3m REAL,
+                return_6m REAL,
+                return_12m REAL,
+                rank_3m REAL,
+                rank_6m REAL,
+                rank_12m REAL,
+                avg_rank REAL,
+                universe_size INTEGER,
+                streak INTEGER DEFAULT 1,
+                streak_start DATE,
+                date DATE,
+                PRIMARY KEY (ticker, date)
+            )
+        """)
+
         # 4. Combined-universe 12-month ranks and SIC industry aggregates
         cur.execute("""
             CREATE TABLE IF NOT EXISTS company_metadata (

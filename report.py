@@ -387,11 +387,12 @@ class ReportService:
             
         return enriched
 
-    def _render_cohort(self, stocks: list[dict], dropped_stats: list[dict], cohort: str) -> tuple[str, str]:
+    def _render_cohort(self, stocks: list[dict], dropped_stats: list[dict], cohort: str, link_cards: bool = True) -> tuple[str, str]:
         # 1. Active Summary
         summary_lines = []
         for s in stocks:
             anchor = f"{cohort}-{s['ticker']}"
+            href = f'href="#{anchor}"' if link_cards else ""
             streak_color = "#006400" if "since" in s['streak_html'] else "#0000FF"
             
             if cohort == "munger":
@@ -409,6 +410,12 @@ class ReportService:
                     f"(#{s.get('best_return_rank', 'N/A')}/{s.get('return_universe_size', 'N/A')}) "
                     f"| 200SMA: {s.get('sma_200', 'N/A')}"
                 )
+            elif cohort == "megalaggards":
+                extra_info = (
+                    f"3M {s.get('return_3m', 'N/A')} / 6M {s.get('return_6m', 'N/A')} / "
+                    f"12M {s.get('return_12m', 'N/A')} | Avg Rank {s.get('avg_rank', 'N/A')}"
+                    f" of {s.get('universe_size', 'N/A')}"
+                )
             else:
                 # Standard Momentum
                 w_ret = s.get('last_week_return', 'N/A')
@@ -418,7 +425,7 @@ class ReportService:
 
             line = f"""
                 <div style="margin-bottom: 4px;">
-                    <a href="#{anchor}" style="text-decoration:none; font-weight:bold; color:{streak_color};">
+                    <a {href} style="text-decoration:none; font-weight:bold; color:{streak_color};">
                         {s.get('ma_dots', '')}{s['ticker']}
                     </a> 
                     <span style="color:#555;">
@@ -451,7 +458,7 @@ class ReportService:
                     {{ ma_dots|default('') }}{{ ticker }} <span style="font-weight:normal; color:#555;">— {{ name }}</span> <span style="color:#333;">{{ price }}</span>
                 </h3>
                 <span style="font-size:0.9em; color:#666; background:#f5f5f5; padding: 4px 8px; border-radius:4px;">
-                    {% if cohort not in ['munger', 'munger400l', 'munger400r'] %}Rank Change: <strong>{{ rank_change }}</strong> |{% endif %} {{ streak_html }}
+                    {% if cohort not in ['munger', 'munger400l', 'munger400r', 'megalaggards'] %}Rank Change: <strong>{{ rank_change }}</strong> |{% endif %} {{ streak_html }}
                 </span>
             </div>
             
@@ -473,6 +480,10 @@ class ReportService:
                                 <span style="color:#666; font-size:0.9em;">Best 12-Mo Return: {{ best_12m_return }} | Rank: #{{ best_return_rank }} of {{ return_universe_size }}</span><br>
                                 <span style="color:#666; font-size:0.9em;">Best Rank Date: {{ best_return_date }} | Last Qualified: {{ most_recent_qualified_date }}</span><br>
                                 <span style="color:#666; font-size:0.9em;">200-Day Avg: {{ sma_200 }} | 10-Day Avg: {{ sma_10 }} | Most Recent Dip: {{ dip_date }}</span>
+                            {% elif cohort == 'megalaggards' %}
+                                <strong>Strategy:</strong> <span style="color:#c0392b;">Mega Cap Laggards</span><br>
+                                <span style="color:#666; font-size:0.9em;">Avg Rank: {{ avg_rank }} of {{ universe_size }}</span><br>
+                                <span style="color:#666; font-size:0.9em;">3-Mo: {{ return_3m }} (#{{ rank_3m }}) | 6-Mo: {{ return_6m }} (#{{ rank_6m }}) | 12-Mo: {{ return_12m }} (#{{ rank_12m }})</span>
                             {% else %}
                                 <strong>12-Mo Return:</strong> <span style="color:green; font-size:1.2em;">{{ current_return }}</span><br>
                                 <span style="color:#666; font-size:0.9em;">Last Week: {{ last_week_return }}</span>
@@ -610,6 +621,10 @@ class ReportService:
             <h2 id="summary-megacap">💎 Mega Cap Leaders</h2>
             {{ mega_summary | safe }}
 
+            <h2 id="summary-megalaggards" style="border-left-color: #c0392b;">🐢 Mega Cap Laggards</h2>
+            <p style="font-size:0.9em; color:#666;">The 10 largest S&amp;P 500 stocks ranked by 3-, 6-, and 12-month return; these are the three with the worst average rank.</p>
+            {{ laggards_summary | safe }}
+
             <h2 id="summary-sp500">🏢 S&P 500 Leaders</h2>
             {{ spy_summary | safe }}
 
@@ -635,6 +650,11 @@ class ReportService:
 
             <h2>💎 Mega Cap Details</h2>
             {{ mega_cards | safe }}
+
+            {% if laggards_cards %}
+            <h2>🐢 Mega Cap Laggards Details</h2>
+            {{ laggards_cards | safe }}
+            {% endif %}
 
             <h2>🏢 S&P 500 Details</h2>
             {{ spy_cards | safe }}
@@ -675,6 +695,7 @@ class ReportService:
             munger400r_summary=sections.get('munger400r', {}).get('summary', "<p style='color:#777; font-style:italic;'>No active signals this week.</p>"),
             munger400r_cards=sections.get('munger400r', {}).get('cards', ''),
             mega_summary=sections.get('megacap', {}).get('summary', ''), mega_cards=sections.get('megacap', {}).get('cards', ''),
+            laggards_summary=sections.get('megalaggards', {}).get('summary', ''), laggards_cards=sections.get('megalaggards', {}).get('cards', ''),
             spy_summary=sections.get('sp500', {}).get('summary', ''), spy_cards=sections.get('sp500', {}).get('cards', ''),
             mdy_summary=sections.get('sp400', {}).get('summary', ''), mdy_cards=sections.get('sp400', {}).get('cards', ''),
         )

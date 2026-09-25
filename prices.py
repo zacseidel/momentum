@@ -70,7 +70,9 @@ class PriceService:
             "latest_trading":  base_date,
             "minus_1_week":    (ts - pd.Timedelta(weeks=1)).date(),
             "minus_1_month":   (ts - pd.DateOffset(months=1)).date(),
-            "minus_1_year":    (ts - pd.DateOffset(years=1)).date(),
+            "minus_3_months":  (ts - pd.DateOffset(months=3)).date(),
+            "minus_6_months":  (ts - pd.DateOffset(months=6)).date(),
+            "minus_1_year":   (ts - pd.DateOffset(years=1)).date(),
             "minus_13_months": (ts - pd.DateOffset(years=1, months=1)).date(),
         }
 

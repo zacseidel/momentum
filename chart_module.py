@@ -20,13 +20,16 @@ _DOT_SPECS = (
     ("50d SMA", "sma50_above"),
 )
 
-def _fetch_history_from_db(ticker: str, days_back=365) -> pd.DataFrame:
+def _fetch_history_from_db(ticker: str, days_back=365, as_of: Optional[str] = None) -> pd.DataFrame:
     """
     Fetches daily OHLCV from the local SQLite DB.
     Assumes data has already been synced/backfilled by the PriceService.
+    as_of (YYYY-MM-DD) ends the window on that date instead of today.
     """
     # Calculate cutoff date
-    cutoff_date = (pd.Timestamp.now() - pd.Timedelta(days=days_back)).strftime("%Y-%m-%d")
+    end = pd.Timestamp(as_of) if as_of else pd.Timestamp.now()
+    cutoff_date = (end - pd.Timedelta(days=days_back)).strftime("%Y-%m-%d")
+    end_date = end.strftime("%Y-%m-%d")
 
     # Connect and Query
     # Note: We assume the DB exists because run_report.py creates it
@@ -37,10 +40,10 @@ def _fetch_history_from_db(ticker: str, days_back=365) -> pd.DataFrame:
         query = """
             SELECT date, open, high, low, close, volume 
             FROM daily_prices 
-            WHERE ticker = ? AND date >= ? 
+            WHERE ticker = ? AND date >= ? AND date <= ?
             ORDER BY date ASC
         """
-        df = pd.read_sql_query(query, conn, params=(ticker, cutoff_date))
+        df = pd.read_sql_query(query, conn, params=(ticker, cutoff_date, end_date))
 
     if df.empty:
         return pd.DataFrame()
@@ -111,8 +114,8 @@ def ma_position_signals(close: pd.Series) -> dict:
     }
 
 
-def ma_signals_for_ticker(ticker: str) -> dict:
-    df = _fetch_history_from_db(ticker)
+def ma_signals_for_ticker(ticker: str, as_of: Optional[str] = None) -> dict:
+    df = _fetch_history_from_db(ticker, as_of=as_of)
     if df.empty:
         return ma_position_signals(pd.Series(dtype=float))
     return ma_position_signals(df["Close"])
