@@ -635,14 +635,6 @@ class ReportService:
             <h2 id="summary-sp400">🏭 S&P 400 (MidCap) Leaders</h2>
             {{ mdy_summary | safe }}
 
-            <h2 id="summary-rankmom500" style="border-left-color: #16a085;">📶 S&P 500 Rank Momentum</h2>
-            <p style="font-size:0.9em; color:#666;">S&amp;P 500 stocks ranked by 3-, 6-, and 12-month return; these are the ten with the best average rank.</p>
-            {{ rankmom500_summary | safe }}
-
-            <h2 id="summary-rankmom400" style="border-left-color: #16a085;">📶 S&P 400 Rank Momentum</h2>
-            <p style="font-size:0.9em; color:#666;">S&amp;P 400 stocks ranked by 3-, 6-, and 12-month return; these are the ten with the best average rank.</p>
-            {{ rankmom400_summary | safe }}
-
             <h2 id="summary-megacap">💎 Mega Cap Leaders</h2>
             {{ mega_summary | safe }}
 
@@ -651,6 +643,14 @@ class ReportService:
             <p style="font-size:0.9em; color:#666;">Top 50 stocks that dipped below 200-day avg (last 10d) and recovered above 10-day avg.</p>
             {{ munger_summary | safe }}
             {% endif %}
+
+            <h2 id="summary-rankmom500" style="border-left-color: #16a085;">📶 S&P 500 Rank Momentum</h2>
+            <p style="font-size:0.9em; color:#666;">S&amp;P 500 stocks ranked by 3-, 6-, and 12-month return; these are the ten with the best average rank.</p>
+            {{ rankmom500_summary | safe }}
+
+            <h2 id="summary-rankmom400" style="border-left-color: #16a085;">📶 S&P 400 Rank Momentum</h2>
+            <p style="font-size:0.9em; color:#666;">S&amp;P 400 stocks ranked by 3-, 6-, and 12-month return; these are the ten with the best average rank.</p>
+            {{ rankmom400_summary | safe }}
 
             <h2 id="summary-munger400l" style="border-left-color: #7d3c98;">🏛️ Munger400L — Large Midcap Mean Reversion</h2>
             <p style="font-size:0.9em; color:#666;">Largest 15% of current S&amp;P 400 constituents by MDY portfolio weight that dipped below their 200-day average and recovered above their 10-day average.</p>
