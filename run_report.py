@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 # Local Modules
 from universe import UniverseService
 from prices import PriceService
-from ranking import RankingService
+from ranking import RANK_MOMENTUM_COHORTS, RankingService
 from report import ReportService
 from build_site import build_website
 from metadata_refresh import (
@@ -68,6 +68,8 @@ async def build_report(run_date: date):
     top_picks = {} 
     all_winners = [] # We collect all tickers that need charts/metadata
 
+    cohort_prices = {}
+
     # --- A. Standard Momentum Strategy ---
     for cohort in MOMENTUM_COHORTS:
         print(f"📊 Processing {cohort.upper()}...")
@@ -76,6 +78,7 @@ async def build_report(run_date: date):
         cohort_df = u_service.get_cohort(cohort)
         tickers = cohort_df['symbol'].tolist()
         prices_df = await p_service.get_snapshots(tickers, target_dates)
+        cohort_prices[cohort] = (cohort_df, prices_df)
         
         # Rank
         ranked_df = r_service.calculate_ranks(prices_df, target_dates)
@@ -96,6 +99,16 @@ async def build_report(run_date: date):
     top_picks["megalaggards"] = laggard_picks
     if not laggard_picks.empty:
         all_winners.extend(laggard_picks['ticker'].tolist())
+
+    # --- A3. Rank Momentum (best avg 3/6/12M rank across each index) ---
+    for cohort, index_cohort in RANK_MOMENTUM_COHORTS.items():
+        print(f"📊 Processing {cohort.upper()}...")
+        index_df, index_prices = cohort_prices[index_cohort]
+        rank_mom = r_service.rank_rank_momentum(index_df, index_prices, target_dates)
+        rank_mom_picks = r_service.process_rank_momentum(rank_mom, cohort, run_date)
+        top_picks[cohort] = rank_mom_picks
+        if not rank_mom_picks.empty:
+            all_winners.extend(rank_mom_picks['ticker'].tolist())
 
     # --- B. Munger Strategy (Top 50 Market Cap Reversion) ---
     print(f"📊 Processing MUNGER STRATEGY...")

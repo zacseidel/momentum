@@ -92,7 +92,14 @@ def build_website():
         <li><strong>Signal:</strong> A close below the 200-day average during the last 10 sessions followed by a latest close above the 10-day average. The fixed 200-session window requires at least 90% observation coverage.</li>
     </ul>
 
-    <h3>4. Industry &amp; Rank Changes</h3>
+    <h3>4. Rank Momentum (Report-Only)</h3>
+    <p>Blends three lookbacks into one momentum score, separately for the S&amp;P 500 and the S&amp;P 400.</p>
+    <ul>
+        <li><strong>Ranks:</strong> Every constituent is ranked by 3-, 6- and 12-month return (1 = best), and the three ranks are averaged.</li>
+        <li><strong>Selection:</strong> The 10 stocks with the lowest average rank per index; ties go to the higher 12-month return. No rank-improvement filter.</li>
+    </ul>
+
+    <h3>5. Industry &amp; Rank Changes</h3>
     <p>A separate weekly page treats S&amp;P 500 and S&amp;P 400 as one universe.</p>
     <ul>
         <li><strong>Stock ranks:</strong> 12-month return across the combined universe, compared with the same 12-month rank from one month earlier.</li>

@@ -8,6 +8,7 @@ This project implements a quantitative reporting system comprising three strateg
 1.  **Momentum Engine (Growth):** Focuses on **S&P 500**, **S&P 400 (MidCap)**, and **MegaCap** (Top 25).
 2.  **Munger Engine (Value/Reversion):** Focuses on high-quality **Top 50 Market Cap** stocks trading at a discount.
 3.  **Munger400L / Munger400R:** Applies mean reversion to the largest S&P 400 stocks by MDY weight and to former S&P 400 return leaders.
+4.  **Rank Momentum:** Picks the 10 S&P 500 and 10 S&P 400 stocks with the best average rank across 3-, 6- and 12-month returns.
 
 It runs a weekly pipeline that:
 1.  **Syncs** the universe of stocks from State Street (SSGA).
@@ -35,6 +36,11 @@ It runs a weekly pipeline that:
 * **Shared Signal:** At least one close below the 200-day SMA in the last 10 trading sessions, followed by the latest close above the 10-day SMA. Each SMA uses the fixed preceding 200 market sessions and requires at least 90% observation coverage; older rows are never pulled in to fill gaps.
 * **Munger400L Universe:** Largest 15% of current S&P 400 constituents by MDY portfolio weight.
 * **Munger400R Universe:** Current S&P 400 constituents that ranked in the top 15% by 12-month return on any twice-weekly report date during the trailing year.
+
+### 4. Rank Momentum
+* **Cohorts:** S&P 500 (`rankmom500`), S&P 400 (`rankmom400`).
+* **Signal:** Each constituent is ranked by 3-, 6- and 12-month return (1 = best); the three ranks are averaged.
+* **Selection:** Top 10 by lowest average rank per index; ties go to the higher 12-month return.
 
 ---
 

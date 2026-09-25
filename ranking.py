@@ -10,6 +10,7 @@ from sic import UNCLASSIFIED_SIC2, industry_name, load_sic_major_groups, sic2_fr
 
 # --- Configuration ---
 DB_PATH = Path("data/market_data.sqlite")
+RANK_MOMENTUM_COHORTS = {"rankmom500": "sp500", "rankmom400": "sp400"}
 
 class RankingService:
     def __init__(self, db_path: Path = DB_PATH):
@@ -289,6 +290,67 @@ class RankingService:
             .set_index("ticker")
         )
 
+        df = self._multi_period_scores(largest, prices_df, date_map, "Laggards")
+        if df.empty:
+            return pd.DataFrame()
+
+        # Worst average rank first; the weaker 12-month return breaks ties.
+        df = df.reset_index().sort_values(
+            ["avg_rank", "return_12m"], ascending=[False, True]
+        ).head(pick_count).reset_index(drop=True)
+        df.insert(0, "rank", df.index + 1)
+        return df
+
+    def rank_rank_momentum(
+        self,
+        candidates_df: pd.DataFrame,
+        prices_df: pd.DataFrame,
+        date_map: Dict[str, str],
+        pick_count: int = 10,
+    ) -> pd.DataFrame:
+        """
+        Rank a whole index cohort by 3/6/12-month return (1 = best) and return
+        the names with the best (lowest) average rank.
+        """
+        if candidates_df.empty or prices_df.empty:
+            return pd.DataFrame()
+
+        universe = (
+            candidates_df.dropna(subset=["symbol"])
+            .loc[lambda df: df["symbol"] != "CASH_USD", ["symbol"]]
+            .drop_duplicates("symbol")
+            .rename(columns={"symbol": "ticker"})
+            .set_index("ticker")
+        )
+        df = self._multi_period_scores(universe, prices_df, date_map, "Rank Momentum")
+        if df.empty:
+            return pd.DataFrame()
+
+        pivoted = prices_df.pivot(index="ticker", columns="date", values="close")
+        week_col = date_map.get("minus_1_week")
+        if week_col in pivoted.columns:
+            closes = pivoted.reindex(df.index)
+            df["last_week_return"] = closes[date_map["latest_trading"]] / closes[week_col] - 1
+
+        # Best average rank first; the stronger 12-month return breaks ties.
+        df = df.reset_index().sort_values(
+            ["avg_rank", "return_12m"], ascending=[True, False]
+        ).head(pick_count).reset_index(drop=True)
+        df.insert(0, "rank", df.index + 1)
+        return df
+
+    def _multi_period_scores(
+        self,
+        universe: pd.DataFrame,
+        prices_df: pd.DataFrame,
+        date_map: Dict[str, str],
+        label: str,
+    ) -> pd.DataFrame:
+        """
+        Add 3/6/12-month returns, their ranks (1 = best), the average rank and
+        the ranked universe size to a ticker-indexed frame. Tickers missing any
+        of the four closes are dropped before ranking.
+        """
         pivoted = prices_df.pivot(index="ticker", columns="date", values="close")
         periods = {
             "3m": "minus_3_months",
@@ -301,31 +363,27 @@ class RankingService:
             if date_map[key] not in pivoted.columns
         ]
         if missing_cols:
-            print(f"❌ Laggard Ranking Error: Missing price columns {missing_cols}")
+            print(f"❌ {label} Ranking Error: Missing price columns {missing_cols}")
             return pd.DataFrame()
 
-        df = largest.copy()
-        for label, key in periods.items():
+        df = universe.copy()
+        for period, key in periods.items():
             base = pivoted[date_map[key]].reindex(df.index)
-            df[f"return_{label}"] = pivoted[now_col].reindex(df.index) / base - 1
+            df[f"return_{period}"] = pivoted[now_col].reindex(df.index) / base - 1
 
-        missing = df[df.isna().any(axis=1)].index.tolist()
+        return_cols = [f"return_{period}" for period in periods]
+        missing = df[df[return_cols].isna().any(axis=1)].index.tolist()
         if missing:
-            print(f"   ⚠️ Laggards: skipping {missing} (missing price history)")
-            df = df.dropna()
+            shown = missing if len(missing) <= 15 else missing[:15] + ["..."]
+            print(f"   ⚠️ {label}: skipping {len(missing)} {shown} (missing price history)")
+            df = df.dropna(subset=return_cols)
         if df.empty:
             return pd.DataFrame()
 
-        for label in periods:
-            df[f"rank_{label}"] = df[f"return_{label}"].rank(ascending=False, method="min")
-        df["avg_rank"] = df[[f"rank_{label}" for label in periods]].mean(axis=1)
+        for period in periods:
+            df[f"rank_{period}"] = df[f"return_{period}"].rank(ascending=False, method="min")
+        df["avg_rank"] = df[[f"rank_{period}" for period in periods]].mean(axis=1)
         df["universe_size"] = len(df)
-
-        # Worst average rank first; the weaker 12-month return breaks ties.
-        df = df.reset_index().sort_values(
-            ["avg_rank", "return_12m"], ascending=[False, True]
-        ).head(pick_count).reset_index(drop=True)
-        df.insert(0, "rank", df.index + 1)
         return df
 
     def process_megacap_laggards(self, picks_df: pd.DataFrame, run_date: date) -> pd.DataFrame:
@@ -349,6 +407,35 @@ class RankingService:
         display_df["avg_rank"] = display_df["avg_rank"].apply(lambda value: f"{value:.1f}")
 
         print(f"   💾 Saved {len(display_df)} Mega Cap Laggard picks.")
+        return display_df
+
+    def process_rank_momentum(
+        self, picks_df: pd.DataFrame, cohort: str, run_date: date
+    ) -> pd.DataFrame:
+        """Persist and format a Rank Momentum cohort (rankmom500 / rankmom400)."""
+        if cohort not in RANK_MOMENTUM_COHORTS:
+            raise ValueError(f"Unsupported Rank Momentum cohort: {cohort}")
+        self._ensure_rank_momentum_table(cohort)
+        if picks_df.empty:
+            self._delete_run_date(cohort, run_date)
+            print(f"⚠️  No {cohort} picks found.")
+            return pd.DataFrame()
+
+        persisted = self._calculate_streaks(picks_df.copy(), cohort, run_date)
+        persisted["date"] = run_date.isoformat()
+        self._save_to_db(persisted, cohort, run_date)
+
+        display_df = persisted.copy()
+        for column in ["return_3m", "return_6m", "return_12m", "last_week_return"]:
+            if column in display_df.columns:
+                display_df[column] = display_df[column].apply(
+                    lambda value: f"{value:.1%}" if pd.notna(value) else "N/A"
+                )
+        for column in ["rank_3m", "rank_6m", "rank_12m"]:
+            display_df[column] = display_df[column].astype(int)
+        display_df["avg_rank"] = display_df["avg_rank"].apply(lambda value: f"{value:.1f}")
+
+        print(f"   💾 Saved {len(display_df)} {cohort} picks.")
         return display_df
 
     def process_munger400_picks(
@@ -673,6 +760,28 @@ class RankingService:
                     rank_12m REAL,
                     avg_rank REAL,
                     universe_size INTEGER,
+                    streak INTEGER DEFAULT 1,
+                    streak_start DATE,
+                    date DATE,
+                    PRIMARY KEY (ticker, date)
+                )
+            """)
+
+    def _ensure_rank_momentum_table(self, cohort: str):
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute(f"""
+                CREATE TABLE IF NOT EXISTS top10_{cohort} (
+                    rank INTEGER,
+                    ticker TEXT,
+                    return_3m REAL,
+                    return_6m REAL,
+                    return_12m REAL,
+                    rank_3m REAL,
+                    rank_6m REAL,
+                    rank_12m REAL,
+                    avg_rank REAL,
+                    universe_size INTEGER,
+                    last_week_return REAL,
                     streak INTEGER DEFAULT 1,
                     streak_start DATE,
                     date DATE,

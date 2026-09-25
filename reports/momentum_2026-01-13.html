@@ -38,7 +38,14 @@
                 
                 @keyframes fadeIn { from {opacity: 0;} to {opacity: 1;} }
             </style>
-        </head>
+        <style>
+    .ma-dots { display: inline-flex; gap: 3px; margin-right: 6px; vertical-align: middle; }
+    .ma-dot { width: 0.7em; height: 0.7em; border-radius: 50%; display: inline-block; border: 1px solid rgba(0,0,0,.18); }
+    .ma-dot.above { background: #1b8a3a; }
+    .ma-dot.below { background: #c42020; }
+    .ma-dot.unknown { background: #ccc; }
+</style>
+</head>
         <body>
             <div style="margin-bottom: 10px;">
                 <a href="../index.html" style="text-decoration:none; color:#0066cc; font-size:0.9em;">&larr; Back to Dashboard</a>
@@ -74,6 +81,196 @@
                 </tbody>
             </table>
             
+
+            <!-- rankmom:start -->
+            <h2 id="summary-rankmom500" style="border-left-color: #16a085;">📶 S&amp;P 500 Rank Momentum</h2>
+            <p style="font-size:0.9em; color:#666;">S&amp;P 500 stocks ranked by 3-, 6-, and 12-month return; these are the ten with the best average rank. Dots (left to right): 10-day EMA, 21-day EMA, 50-day SMA as of the report date; green = last close at or above, red = below.</p>
+            
+                <div style="margin-bottom: 4px;">
+                    <a  style="text-decoration:none; font-weight:bold; color:#006400;">
+                        <span class="ma-dots"><span class="ma-dot above" title="10d EMA: last close above"></span><span class="ma-dot above" title="21d EMA: last close above"></span><span class="ma-dot above" title="50d SMA: last close above"></span></span>MU
+                    </a> 
+                    <span style="color:#555;">
+                        ($345.87 | Avg Rank 1.7 | 3M 90.5% / 6M 177.7% / 12M 248.2%, <span style='color:#006400'>+10.8%</span> 1W) - 🔥 <strong>since 2026-01-07</strong>
+                    </span>
+                </div>
+            
+                <div style="margin-bottom: 4px;">
+                    <a  style="text-decoration:none; font-weight:bold; color:#006400;">
+                        <span class="ma-dots"><span class="ma-dot above" title="10d EMA: last close above"></span><span class="ma-dot above" title="21d EMA: last close above"></span><span class="ma-dot above" title="50d SMA: last close above"></span></span>WDC
+                    </a> 
+                    <span style="color:#555;">
+                        ($212.14 | Avg Rank 2.3 | 3M 83.8% / 6M 220.7% / 12M 237.7%, <span style='color:#006400'>+12.9%</span> 1W) - 🔥 <strong>since 2026-01-07</strong>
+                    </span>
+                </div>
+            
+                <div style="margin-bottom: 4px;">
+                    <a  style="text-decoration:none; font-weight:bold; color:#006400;">
+                        <span class="ma-dots"><span class="ma-dot below" title="10d EMA: last close below"></span><span class="ma-dot above" title="21d EMA: last close above"></span><span class="ma-dot above" title="50d SMA: last close above"></span></span>WBD
+                    </a> 
+                    <span style="color:#555;">
+                        ($28.40 | Avg Rank 5.0 | 3M 66.1% / 6M 142.1% / 12M 192.8%, <span style='color:#c42020'>-0.5%</span> 1W) - 🔥 <strong>since 2026-01-07</strong>
+                    </span>
+                </div>
+            
+                <div style="margin-bottom: 4px;">
+                    <a  style="text-decoration:none; font-weight:bold; color:#006400;">
+                        <span class="ma-dots"><span class="ma-dot above" title="10d EMA: last close above"></span><span class="ma-dot above" title="21d EMA: last close above"></span><span class="ma-dot above" title="50d SMA: last close above"></span></span>LRCX
+                    </a> 
+                    <span style="color:#555;">
+                        ($220.40 | Avg Rank 5.3 | 3M 67.8% / 6M 116.7% / 12M 195.2%, <span style='color:#006400'>+13.2%</span> 1W) - 🔥 <strong>since 2026-01-07</strong>
+                    </span>
+                </div>
+            
+                <div style="margin-bottom: 4px;">
+                    <a  style="text-decoration:none; font-weight:bold; color:#006400;">
+                        <span class="ma-dots"><span class="ma-dot above" title="10d EMA: last close above"></span><span class="ma-dot above" title="21d EMA: last close above"></span><span class="ma-dot above" title="50d SMA: last close above"></span></span>STX
+                    </a> 
+                    <span style="color:#555;">
+                        ($321.48 | Avg Rank 5.7 | 3M 50.0% / 6M 118.4% / 12M 261.7%, <span style='color:#006400'>+10.9%</span> 1W) - 🔥 <strong>since 2026-01-07</strong>
+                    </span>
+                </div>
+            <div style='display:flex; align-items:center; gap:8px; margin:8px 0; color:#999; font-size:0.75em; text-transform:uppercase; letter-spacing:0.05em;'><span style='flex:1; border-top:2px solid #bbb;'></span>Bottom 5<span style='flex:1; border-top:2px solid #bbb;'></span></div>
+                <div style="margin-bottom: 4px;">
+                    <a  style="text-decoration:none; font-weight:bold; color:#006400;">
+                        <span class="ma-dots"><span class="ma-dot above" title="10d EMA: last close above"></span><span class="ma-dot above" title="21d EMA: last close above"></span><span class="ma-dot above" title="50d SMA: last close above"></span></span>ALB
+                    </a> 
+                    <span style="color:#555;">
+                        ($169.33 | Avg Rank 8.0 | 3M 88.4% / 6M 138.6% / 12M 95.7%, <span style='color:#006400'>+15.9%</span> 1W) - 🔥 <strong>since 2026-01-07</strong>
+                    </span>
+                </div>
+            
+                <div style="margin-bottom: 4px;">
+                    <a  style="text-decoration:none; font-weight:bold; color:#006400;">
+                        <span class="ma-dots"><span class="ma-dot above" title="10d EMA: last close above"></span><span class="ma-dot above" title="21d EMA: last close above"></span><span class="ma-dot above" title="50d SMA: last close above"></span></span>TER
+                    </a> 
+                    <span style="color:#555;">
+                        ($224.36 | Avg Rank 14.7 | 3M 69.9% / 6M 131.2% / 12M 67.2%, <span style='color:#006400'>+2.2%</span> 1W) - 🔥 <strong>since 2026-01-07</strong>
+                    </span>
+                </div>
+            
+                <div style="margin-bottom: 4px;">
+                    <a  style="text-decoration:none; font-weight:bold; color:#006400;">
+                        <span class="ma-dots"><span class="ma-dot above" title="10d EMA: last close above"></span><span class="ma-dot above" title="21d EMA: last close above"></span><span class="ma-dot above" title="50d SMA: last close above"></span></span>NEM
+                    </a> 
+                    <span style="color:#555;">
+                        ($112.96 | Avg Rank 16.3 | 3M 32.7% / 6M 87.9% / 12M 188.9%, <span style='color:#006400'>+9.1%</span> 1W) - 🔥 <strong>since 2026-01-10</strong>
+                    </span>
+                </div>
+            
+                <div style="margin-bottom: 4px;">
+                    <a  style="text-decoration:none; font-weight:bold; color:#0000FF;">
+                        <span class="ma-dots"><span class="ma-dot above" title="10d EMA: last close above"></span><span class="ma-dot above" title="21d EMA: last close above"></span><span class="ma-dot above" title="50d SMA: last close above"></span></span>KLAC
+                    </a> 
+                    <span style="color:#555;">
+                        ($142.82 | Avg Rank 16.3 | 3M 45.3% / 6M 54.5% / 12M 109.1%, <span style='color:#006400'>+5.6%</span> 1W) - ✨ <strong>New Entrant</strong>
+                    </span>
+                </div>
+            
+                <div style="margin-bottom: 4px;">
+                    <a  style="text-decoration:none; font-weight:bold; color:#006400;">
+                        <span class="ma-dots"><span class="ma-dot above" title="10d EMA: last close above"></span><span class="ma-dot above" title="21d EMA: last close above"></span><span class="ma-dot above" title="50d SMA: last close above"></span></span>HII
+                    </a> 
+                    <span style="color:#555;">
+                        ($398.25 | Avg Rank 18.7 | 3M 40.7% / 6M 54.3% / 12M 109.6%, <span style='color:#006400'>+9.6%</span> 1W) - 🔥 <strong>since 2026-01-10</strong>
+                    </span>
+                </div>
+            <div style='margin-top:10px; padding-top:10px; border-top:1px dashed #ccc; color:#888; font-size:0.9em;'><strong>Dropped:</strong> GOOGL (72.8%, <span style='color:#006400'>+4.8%</span>)</div>
+
+            <h2 id="summary-rankmom400" style="border-left-color: #16a085;">📶 S&amp;P 400 Rank Momentum</h2>
+            <p style="font-size:0.9em; color:#666;">S&amp;P 400 stocks ranked by 3-, 6-, and 12-month return; these are the ten with the best average rank.</p>
+            
+                <div style="margin-bottom: 4px;">
+                    <a  style="text-decoration:none; font-weight:bold; color:#006400;">
+                        <span class="ma-dots"><span class="ma-dot above" title="10d EMA: last close above"></span><span class="ma-dot above" title="21d EMA: last close above"></span><span class="ma-dot above" title="50d SMA: last close above"></span></span>HL
+                    </a> 
+                    <span style="color:#555;">
+                        ($24.46 | Avg Rank 2.0 | 3M 95.1% / 6M 287.0% / 12M 370.4%, <span style='color:#006400'>+24.0%</span> 1W) - 🔥 <strong>since 2026-01-07</strong>
+                    </span>
+                </div>
+            
+                <div style="margin-bottom: 4px;">
+                    <a  style="text-decoration:none; font-weight:bold; color:#006400;">
+                        <span class="ma-dots"><span class="ma-dot above" title="10d EMA: last close above"></span><span class="ma-dot above" title="21d EMA: last close above"></span><span class="ma-dot above" title="50d SMA: last close above"></span></span>SATS
+                    </a> 
+                    <span style="color:#555;">
+                        ($126.07 | Avg Rank 2.3 | 3M 70.4% / 6M 308.5% / 12M 446.0%, <span style='color:#006400'>+13.9%</span> 1W) - 🔥 <strong>since 2026-01-07</strong>
+                    </span>
+                </div>
+            
+                <div style="margin-bottom: 4px;">
+                    <a  style="text-decoration:none; font-weight:bold; color:#006400;">
+                        <span class="ma-dots"><span class="ma-dot below" title="10d EMA: last close below"></span><span class="ma-dot below" title="21d EMA: last close below"></span><span class="ma-dot above" title="50d SMA: last close above"></span></span>LITE
+                    </a> 
+                    <span style="color:#555;">
+                        ($339.87 | Avg Rank 2.3 | 3M 127.2% / 6M 265.5% / 12M 302.8%, <span style='color:#c42020'>-4.8%</span> 1W) - 🔥 <strong>since 2026-01-07</strong>
+                    </span>
+                </div>
+            
+                <div style="margin-bottom: 4px;">
+                    <a  style="text-decoration:none; font-weight:bold; color:#006400;">
+                        <span class="ma-dots"><span class="ma-dot above" title="10d EMA: last close above"></span><span class="ma-dot above" title="21d EMA: last close above"></span><span class="ma-dot above" title="50d SMA: last close above"></span></span>AMKR
+                    </a> 
+                    <span style="color:#555;">
+                        ($51.58 | Avg Rank 7.7 | 3M 82.5% / 6M 136.0% / 12M 101.6%, <span style='color:#006400'>+7.2%</span> 1W) - 🔥 <strong>since 2026-01-07</strong>
+                    </span>
+                </div>
+            
+                <div style="margin-bottom: 4px;">
+                    <a  style="text-decoration:none; font-weight:bold; color:#006400;">
+                        <span class="ma-dots"><span class="ma-dot above" title="10d EMA: last close above"></span><span class="ma-dot above" title="21d EMA: last close above"></span><span class="ma-dot above" title="50d SMA: last close above"></span></span>COHR
+                    </a> 
+                    <span style="color:#555;">
+                        ($185.18 | Avg Rank 9.0 | 3M 66.7% / 6M 98.5% / 12M 106.1%, <span style='color:#c42020'>-0.6%</span> 1W) - 🔥 <strong>since 2026-01-07</strong>
+                    </span>
+                </div>
+            <div style='display:flex; align-items:center; gap:8px; margin:8px 0; color:#999; font-size:0.75em; text-transform:uppercase; letter-spacing:0.05em;'><span style='flex:1; border-top:2px solid #bbb;'></span>Bottom 5<span style='flex:1; border-top:2px solid #bbb;'></span></div>
+                <div style="margin-bottom: 4px;">
+                    <a  style="text-decoration:none; font-weight:bold; color:#006400;">
+                        <span class="ma-dots"><span class="ma-dot below" title="10d EMA: last close below"></span><span class="ma-dot above" title="21d EMA: last close above"></span><span class="ma-dot above" title="50d SMA: last close above"></span></span>CIEN
+                    </a> 
+                    <span style="color:#555;">
+                        ($234.26 | Avg Rank 9.3 | 3M 50.2% / 6M 201.3% / 12M 184.8%, <span style='color:#006400'>+1.5%</span> 1W) - 🔥 <strong>since 2026-01-07</strong>
+                    </span>
+                </div>
+            
+                <div style="margin-bottom: 4px;">
+                    <a  style="text-decoration:none; font-weight:bold; color:#006400;">
+                        <span class="ma-dots"><span class="ma-dot above" title="10d EMA: last close above"></span><span class="ma-dot above" title="21d EMA: last close above"></span><span class="ma-dot above" title="50d SMA: last close above"></span></span>AA
+                    </a> 
+                    <span style="color:#555;">
+                        ($65.67 | Avg Rank 10.0 | 3M 87.5% / 6M 111.2% / 12M 82.9%, <span style='color:#006400'>+6.9%</span> 1W) - 🔥 <strong>since 2026-01-07</strong>
+                    </span>
+                </div>
+            
+                <div style="margin-bottom: 4px;">
+                    <a  style="text-decoration:none; font-weight:bold; color:#006400;">
+                        <span class="ma-dots"><span class="ma-dot above" title="10d EMA: last close above"></span><span class="ma-dot above" title="21d EMA: last close above"></span><span class="ma-dot above" title="50d SMA: last close above"></span></span>ROIV
+                    </a> 
+                    <span style="color:#555;">
+                        ($22.16 | Avg Rank 16.3 | 3M 38.2% / 6M 95.1% / 12M 108.5%, <span style='color:#006400'>+4.0%</span> 1W) - 🔥 <strong>since 2026-01-07</strong>
+                    </span>
+                </div>
+            
+                <div style="margin-bottom: 4px;">
+                    <a  style="text-decoration:none; font-weight:bold; color:#006400;">
+                        <span class="ma-dots"><span class="ma-dot above" title="10d EMA: last close above"></span><span class="ma-dot above" title="21d EMA: last close above"></span><span class="ma-dot above" title="50d SMA: last close above"></span></span>ENS
+                    </a> 
+                    <span style="color:#555;">
+                        ($161.53 | Avg Rank 18.3 | 3M 47.7% / 6M 84.4% / 12M 80.2%, <span style='color:#006400'>+4.3%</span> 1W) - 🔥 <strong>since 2026-01-09</strong>
+                    </span>
+                </div>
+            
+                <div style="margin-bottom: 4px;">
+                    <a  style="text-decoration:none; font-weight:bold; color:#0000FF;">
+                        <span class="ma-dots"><span class="ma-dot above" title="10d EMA: last close above"></span><span class="ma-dot above" title="21d EMA: last close above"></span><span class="ma-dot above" title="50d SMA: last close above"></span></span>FIVE
+                    </a> 
+                    <span style="color:#555;">
+                        ($203.61 | Avg Rank 20.0 | 3M 47.0% / 6M 57.3% / 12M 97.3%, <span style='color:#006400'>+3.5%</span> 1W) - ✨ <strong>New Entrant</strong>
+                    </span>
+                </div>
+            <div style='margin-top:10px; padding-top:10px; border-top:1px dashed #ccc; color:#888; font-size:0.9em;'><strong>Dropped:</strong> ATI (124.1%, <span style='color:#006400'>+3.0%</span>)</div>
+            <!-- rankmom:end -->
 
             <h2 id="summary-megacap">💎 Mega Cap Leaders</h2>
             

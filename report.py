@@ -392,7 +392,7 @@ class ReportService:
         summary_lines = []
         for i, s in enumerate(stocks):
             # Top 5 historically outperform the bottom 5 in the index momentum sets
-            if cohort in {"sp500", "sp400"} and i == 5:
+            if cohort in {"sp500", "sp400", "rankmom500", "rankmom400"} and i == 5:
                 summary_lines.append(
                     "<div style='display:flex; align-items:center; gap:8px; margin:8px 0; "
                     "color:#999; font-size:0.75em; text-transform:uppercase; letter-spacing:0.05em;'>"
@@ -423,6 +423,15 @@ class ReportService:
                     f"3M {s.get('return_3m', 'N/A')} / 6M {s.get('return_6m', 'N/A')} / "
                     f"12M {s.get('return_12m', 'N/A')} | Avg Rank {s.get('avg_rank', 'N/A')}"
                     f" of {s.get('universe_size', 'N/A')}"
+                )
+            elif cohort in {"rankmom500", "rankmom400"}:
+                w_ret = s.get('last_week_return', 'N/A')
+                if w_ret != 'N/A' and not w_ret.startswith("-"): w_ret = f"+{w_ret}"
+                ret_color = "#c42020" if "-" in w_ret else "#006400"
+                extra_info = (
+                    f"Avg Rank {s.get('avg_rank', 'N/A')} | 3M {s.get('return_3m', 'N/A')} / "
+                    f"6M {s.get('return_6m', 'N/A')} / 12M {s.get('return_12m', 'N/A')}, "
+                    f"<span style='color:{ret_color}'>{w_ret}</span> 1W"
                 )
             else:
                 # Standard Momentum
@@ -466,7 +475,7 @@ class ReportService:
                     {{ ma_dots|default('') }}{{ ticker }} <span style="font-weight:normal; color:#555;">— {{ name }}</span> <span style="color:#333;">{{ price }}</span>
                 </h3>
                 <span style="font-size:0.9em; color:#666; background:#f5f5f5; padding: 4px 8px; border-radius:4px;">
-                    {% if cohort not in ['munger', 'munger400l', 'munger400r', 'megalaggards'] %}Rank Change: <strong>{{ rank_change }}</strong> |{% endif %} {{ streak_html }}
+                    {% if cohort not in ['munger', 'munger400l', 'munger400r', 'megalaggards', 'rankmom500', 'rankmom400'] %}Rank Change: <strong>{{ rank_change }}</strong> |{% endif %} {{ streak_html }}
                 </span>
             </div>
             
@@ -492,6 +501,10 @@ class ReportService:
                                 <strong>Strategy:</strong> <span style="color:#c0392b;">Mega Cap Laggards</span><br>
                                 <span style="color:#666; font-size:0.9em;">Avg Rank: {{ avg_rank }} of {{ universe_size }}</span><br>
                                 <span style="color:#666; font-size:0.9em;">3-Mo: {{ return_3m }} (#{{ rank_3m }}) | 6-Mo: {{ return_6m }} (#{{ rank_6m }}) | 12-Mo: {{ return_12m }} (#{{ rank_12m }})</span>
+                            {% elif cohort in ['rankmom500', 'rankmom400'] %}
+                                <strong>Avg Rank:</strong> <span style="color:green; font-size:1.2em;">{{ avg_rank }}</span> <span style="color:#666; font-size:0.9em;">of {{ universe_size }}</span><br>
+                                <span style="color:#666; font-size:0.9em;">3-Mo: {{ return_3m }} (#{{ rank_3m }}) | 6-Mo: {{ return_6m }} (#{{ rank_6m }}) | 12-Mo: {{ return_12m }} (#{{ rank_12m }})</span><br>
+                                <span style="color:#666; font-size:0.9em;">Last Week: {{ last_week_return }}</span>
                             {% else %}
                                 <strong>12-Mo Return:</strong> <span style="color:green; font-size:1.2em;">{{ current_return }}</span><br>
                                 <span style="color:#666; font-size:0.9em;">Last Week: {{ last_week_return }}</span>
@@ -622,6 +635,14 @@ class ReportService:
             <h2 id="summary-sp400">🏭 S&P 400 (MidCap) Leaders</h2>
             {{ mdy_summary | safe }}
 
+            <h2 id="summary-rankmom500" style="border-left-color: #16a085;">📶 S&P 500 Rank Momentum</h2>
+            <p style="font-size:0.9em; color:#666;">S&amp;P 500 stocks ranked by 3-, 6-, and 12-month return; these are the ten with the best average rank.</p>
+            {{ rankmom500_summary | safe }}
+
+            <h2 id="summary-rankmom400" style="border-left-color: #16a085;">📶 S&P 400 Rank Momentum</h2>
+            <p style="font-size:0.9em; color:#666;">S&amp;P 400 stocks ranked by 3-, 6-, and 12-month return; these are the ten with the best average rank.</p>
+            {{ rankmom400_summary | safe }}
+
             <h2 id="summary-megacap">💎 Mega Cap Leaders</h2>
             {{ mega_summary | safe }}
 
@@ -669,6 +690,16 @@ class ReportService:
 
             <h2>🏭 S&P 400 Details</h2>
             {{ mdy_cards | safe }}
+
+            {% if rankmom500_cards %}
+            <h2>📶 S&P 500 Rank Momentum Details</h2>
+            {{ rankmom500_cards | safe }}
+            {% endif %}
+
+            {% if rankmom400_cards %}
+            <h2>📶 S&P 400 Rank Momentum Details</h2>
+            {{ rankmom400_cards | safe }}
+            {% endif %}
             
             <div style="text-align:center; margin-top:80px; color:#999; font-size:0.8em;">
                 Generated by Python Momentum Engine • {{ date }}
@@ -706,6 +737,8 @@ class ReportService:
             laggards_summary=sections.get('megalaggards', {}).get('summary', ''), laggards_cards=sections.get('megalaggards', {}).get('cards', ''),
             spy_summary=sections.get('sp500', {}).get('summary', ''), spy_cards=sections.get('sp500', {}).get('cards', ''),
             mdy_summary=sections.get('sp400', {}).get('summary', ''), mdy_cards=sections.get('sp400', {}).get('cards', ''),
+            rankmom500_summary=sections.get('rankmom500', {}).get('summary', ''), rankmom500_cards=sections.get('rankmom500', {}).get('cards', ''),
+            rankmom400_summary=sections.get('rankmom400', {}).get('summary', ''), rankmom400_cards=sections.get('rankmom400', {}).get('cards', ''),
         )
 
     def _get_voo_stats(self, target_dates):
