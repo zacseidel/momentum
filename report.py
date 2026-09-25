@@ -390,7 +390,15 @@ class ReportService:
     def _render_cohort(self, stocks: list[dict], dropped_stats: list[dict], cohort: str, link_cards: bool = True) -> tuple[str, str]:
         # 1. Active Summary
         summary_lines = []
-        for s in stocks:
+        for i, s in enumerate(stocks):
+            # Top 5 historically outperform the bottom 5 in the index momentum sets
+            if cohort in {"sp500", "sp400"} and i == 5:
+                summary_lines.append(
+                    "<div style='display:flex; align-items:center; gap:8px; margin:8px 0; "
+                    "color:#999; font-size:0.75em; text-transform:uppercase; letter-spacing:0.05em;'>"
+                    "<span style='flex:1; border-top:2px solid #bbb;'></span>Bottom 5"
+                    "<span style='flex:1; border-top:2px solid #bbb;'></span></div>"
+                )
             anchor = f"{cohort}-{s['ticker']}"
             href = f'href="#{anchor}"' if link_cards else ""
             streak_color = "#006400" if "since" in s['streak_html'] else "#0000FF"
@@ -604,6 +612,19 @@ class ReportService:
             </table>
             {% endif %}
 
+            <h2 id="summary-megalaggards" style="border-left-color: #c0392b;">🐢 Mega Cap Laggards</h2>
+            <p style="font-size:0.9em; color:#666;">The 10 largest S&amp;P 500 stocks ranked by 3-, 6-, and 12-month return; these are the three with the worst average rank.</p>
+            {{ laggards_summary | safe }}
+
+            <h2 id="summary-sp500">🏢 S&P 500 Leaders</h2>
+            {{ spy_summary | safe }}
+
+            <h2 id="summary-sp400">🏭 S&P 400 (MidCap) Leaders</h2>
+            {{ mdy_summary | safe }}
+
+            <h2 id="summary-megacap">💎 Mega Cap Leaders</h2>
+            {{ mega_summary | safe }}
+
             {% if munger_summary %}
             <h2 id="summary-munger" style="border-left-color: #0066cc;">🧠 Munger Strategy (Mean Reversion)</h2>
             <p style="font-size:0.9em; color:#666;">Top 50 stocks that dipped below 200-day avg (last 10d) and recovered above 10-day avg.</p>
@@ -617,19 +638,6 @@ class ReportService:
             <h2 id="summary-munger400r" style="border-left-color: #b9770e;">↩️ Munger400R — Former Return Leaders</h2>
             <p style="font-size:0.9em; color:#666;">S&amp;P 400 stocks that ranked in the top 15% by 12-month return during the last year, then dipped below their 200-day average and recovered above their 10-day average.</p>
             {{ munger400r_summary | safe }}
-
-            <h2 id="summary-megacap">💎 Mega Cap Leaders</h2>
-            {{ mega_summary | safe }}
-
-            <h2 id="summary-megalaggards" style="border-left-color: #c0392b;">🐢 Mega Cap Laggards</h2>
-            <p style="font-size:0.9em; color:#666;">The 10 largest S&amp;P 500 stocks ranked by 3-, 6-, and 12-month return; these are the three with the worst average rank.</p>
-            {{ laggards_summary | safe }}
-
-            <h2 id="summary-sp500">🏢 S&P 500 Leaders</h2>
-            {{ spy_summary | safe }}
-
-            <h2 id="summary-sp400">🏭 S&P 400 (MidCap) Leaders</h2>
-            {{ mdy_summary | safe }}
             
             <hr style="margin: 60px 0; border: 0; border-top: 1px solid #eee;">
 

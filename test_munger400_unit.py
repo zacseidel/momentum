@@ -201,7 +201,9 @@ class Munger400Tests(unittest.TestCase):
         self.assertIn('id="summary-munger400l"', html)
         self.assertIn('id="summary-munger400r"', html)
         self.assertLess(html.index("Munger400L"), html.index("Munger400R"))
-        self.assertLess(html.index("Munger400R"), html.index("Mega Cap Leaders"))
+        self.assertLess(html.index('id="summary-megalaggards"'), html.index('id="summary-sp500"'))
+        self.assertLess(html.index('id="summary-sp500"'), html.index('id="summary-sp400"'))
+        self.assertLess(html.index('id="summary-sp400"'), html.index('id="summary-munger400l"'))
 
 
 if __name__ == "__main__":
