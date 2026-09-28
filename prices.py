@@ -116,6 +116,28 @@ class PriceService:
                     PRIMARY KEY (ticker, repaired_at)
                 )
             """)
+            # First date that belongs to a reused ticker's current security. Grouped
+            # snapshots of older dates would otherwise restore the old security's rows.
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS history_floors (
+                    ticker     TEXT PRIMARY KEY,
+                    floor_date TEXT
+                )
+            """)
+        self._floors = self._load_history_floors()
+
+    def _load_history_floors(self) -> Dict[str, str]:
+        with sqlite3.connect(self.db_path) as conn:
+            return dict(conn.execute("SELECT ticker, floor_date FROM history_floors").fetchall())
+
+    def _above_floor(self, ticker: str, date_str: str) -> bool:
+        floor = self._floors.get(ticker)
+        return floor is None or date_str >= floor
+
+    def _set_history_floor(self, conn, ticker: str, floor_date: str):
+        conn.execute("INSERT OR REPLACE INTO history_floors (ticker, floor_date) VALUES (?, ?)", (ticker, floor_date))
+        conn.execute("DELETE FROM daily_prices WHERE ticker = ? AND date < ?", (ticker, floor_date))
+        self._floors[ticker] = floor_date
 
     def _load_universe_tickers(self) -> Set[str]:
         """Load Universe + Explicitly Add VOO to whitelist."""
@@ -184,6 +206,11 @@ class PriceService:
                     ((as_of - timedelta(days=SPLIT_REPAIR_COOLDOWN_DAYS)).isoformat(),),
                 )
             }
+            truncated_before = {
+                r[0] for r in conn.execute(
+                    "SELECT DISTINCT ticker FROM price_repairs WHERE reason LIKE '%truncated'"
+                )
+            }
 
         since = date.fromisoformat(row[0]) if row else as_of - timedelta(days=HISTORY_REFETCH_DAYS)
         print(f"🪓 Checking splits executed {since} → {as_of}...")
@@ -197,6 +224,16 @@ class PriceService:
         # Flip-scan hits already repaired recently are skipped so a series Polygon
         # itself serves inconsistently can't trigger a refetch on every run.
         all_closes = self._load_all_closes()
+        # A reused ticker truncated before history floors existed gets its old
+        # security's rows back from grouped snapshots; cut them locally, no refetch.
+        retruncate = set(find_level_breaks(all_closes)) & truncated_before
+        if retruncate:
+            with sqlite3.connect(self.db_path) as conn:
+                for ticker in sorted(retruncate):
+                    kept = drop_before_last_break(all_closes[all_closes["ticker"] == ticker])
+                    print(f"   ✂️ {ticker}: dropping rows restored before its {kept['date'].iloc[0]} break")
+                    self._set_history_floor(conn, ticker, kept["date"].iloc[0])
+            all_closes = self._load_all_closes()
         flip_tickers = set(find_split_contaminated(all_closes)) - recent_repairs
         break_tickers = set(find_level_breaks(all_closes)) - recent_repairs
 
@@ -363,6 +400,27 @@ class PriceService:
                 f"at least {minimum_rows}/{session_count} observations."
             )
 
+    async def ensure_recent_sessions(self, as_of: date, session_count: int = 60) -> List[str]:
+        """
+        Make the last `session_count` market sessions complete: VOO first (the
+        session calendar), then one grouped-daily call per session still missing.
+        Runs only fetch the dates they rank on, so sessions between runs are gaps.
+        """
+        start = as_of - timedelta(days=math.ceil(session_count * 7 / 5) + 14)
+        voo_rows = self._get_history_counts(["VOO"], start, as_of).get("VOO", 0)
+        weekdays = len(pd.bdate_range(start, as_of))
+        if voo_rows < weekdays - 6:  # allow for market holidays
+            print(f"   📈 Backfilling VOO to complete the market-session calendar ({voo_rows}/{weekdays}).")
+            await self._backfill_ticker("VOO", start, as_of)
+
+        sessions = self._get_market_sessions(as_of, session_count)
+        missing = [s for s in sessions if not self._is_date_in_db(s)]
+        if missing:
+            print(f"   📚 Filling {len(missing)} of the last {len(sessions)} sessions with grouped daily data...")
+            for target in missing:
+                await self._ensure_date_data(date.fromisoformat(target))
+        return sessions
+
     async def prepare_munger400_return_history(self, run_date: date) -> List[Dict[str, str]]:
         """Cache and return the twice-weekly observation pairs used by Munger400R."""
         start = pd.Timestamp(run_date) - pd.Timedelta(days=365)
@@ -510,6 +568,8 @@ class PriceService:
                         for r in results:
                             # Polygon returns timestamps in millis for Aggs
                             ts_date = pd.to_datetime(r.get("t"), unit="ms").date().isoformat()
+                            if not self._above_floor(ticker, ts_date):
+                                continue
                             rows.append((
                                 ticker, ts_date, 
                                 r.get("o"), r.get("h"), r.get("l"), r.get("c"), r.get("v")
@@ -593,12 +653,15 @@ class PriceService:
             for r in results
         ])
         kept = drop_before_last_break(fresh)
-        if len(kept) < len(fresh):
+        truncated = len(kept) < len(fresh)
+        if truncated:
             print(
                 f"      ✂️ {ticker}: Polygon series breaks at {kept['date'].iloc[0]} "
                 f"(likely a reused ticker); dropping {len(fresh) - len(kept)} earlier rows"
             )
             reason = f"{reason}+truncated"
+        else:
+            kept = kept[[self._above_floor(ticker, d) for d in kept["date"]]]
         rows = list(kept[["ticker", "date", "open", "high", "low", "close", "volume"]].itertuples(index=False, name=None))
         with sqlite3.connect(self.db_path) as conn:
             # One transaction: older unadjusted rows go too, so no stale jump survives.
@@ -607,6 +670,8 @@ class PriceService:
                 INSERT OR REPLACE INTO daily_prices (ticker, date, open, high, low, close, volume)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
             """, rows)
+            if truncated:
+                self._set_history_floor(conn, ticker, kept["date"].iloc[0])
             conn.execute(
                 "INSERT OR REPLACE INTO price_repairs (ticker, repaired_at, reason, rows) VALUES (?, ?, ?, ?)",
                 (ticker, as_of.isoformat(), reason, len(rows)),
@@ -644,7 +709,7 @@ class PriceService:
 
         for r in results:
             ticker = r.get("T")
-            if ticker in self.valid_tickers:
+            if ticker in self.valid_tickers and self._above_floor(ticker, date_str):
                 filtered_rows.append((
                     ticker, date_str, 
                     r.get("o"), r.get("h"), r.get("l"), r.get("c"), r.get("v")

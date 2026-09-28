@@ -201,8 +201,9 @@ class Munger400Tests(unittest.TestCase):
         self.assertIn('id="summary-munger400l"', html)
         self.assertIn('id="summary-munger400r"', html)
         self.assertLess(html.index("Munger400L"), html.index("Munger400R"))
-        self.assertLess(html.index('id="summary-megalaggards"'), html.index('id="summary-sp500"'))
-        self.assertLess(html.index('id="summary-sp500"'), html.index('id="summary-sp400"'))
+        order = ["sp500", "rankmom500", "megalaggards", "sp400"]
+        positions = [html.index(f'id="summary-{cohort}"') for cohort in order]
+        self.assertEqual(positions, sorted(positions))
         self.assertLess(html.index('id="summary-sp400"'), html.index('id="summary-munger400l"'))
 
 

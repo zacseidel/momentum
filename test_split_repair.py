@@ -137,6 +137,47 @@ class RepairTests(unittest.TestCase):
             ).fetchone()[0]
         self.assertEqual(checkpoint, "2026-01-09")
 
+    def _reused_ticker_rows(self):
+        old = [("BNY", d, 1, 1, 1, 10.0, 1) for d in ("2025-12-01", "2025-12-02")]
+        new = [("BNY", d, 1, 1, 1, c, 1) for d, c in (("2026-01-05", 139.0), ("2026-01-06", 140.0))]
+        with sqlite3.connect(self.db_path) as conn:
+            conn.executemany("INSERT INTO daily_prices VALUES (?, ?, ?, ?, ?, ?, ?)", old + new)
+
+    def test_truncation_sets_floor_that_blocks_old_rows(self):
+        ms = lambda d: int(pd.Timestamp(d).timestamp() * 1000)
+        bar = lambda d, c: {"t": ms(d), "o": 1, "h": 1, "l": 1, "c": c, "v": 1}
+        self._reused_ticker_rows()
+        refetch = {"results": [bar("2025-12-01", 10.0), bar("2025-12-02", 10.0),
+                               bar("2026-01-05", 139.0), bar("2026-01-06", 140.0)]}
+        repaired, _ = self._run([
+            FakeResponse({"results": [{"ticker": "BNY", "execution_date": "2026-01-05"}]}),
+            FakeResponse(refetch),                       # BNY: split-feed hit, truncated
+            FakeResponse({"results": []}),               # OLD flip refetch: nothing
+        ])
+        self.assertIn("BNY", repaired)
+        self.assertEqual([d for d, _ in self._closes("BNY")], ["2026-01-05", "2026-01-06"])
+
+        # A grouped snapshot of an old date must not restore the old security
+        self.service.valid_tickers = {"BNY"}
+        self.service._save_to_db([{"T": "BNY", "o": 1, "h": 1, "l": 1, "c": 10.1, "v": 1}], "2025-12-03")
+        self.service._save_to_db([{"T": "BNY", "o": 1, "h": 1, "l": 1, "c": 141.0, "v": 1}], "2026-01-07")
+        self.assertEqual([d for d, _ in self._closes("BNY")], ["2026-01-05", "2026-01-06", "2026-01-07"])
+
+    def test_restored_rows_of_truncated_ticker_are_cut_without_refetch(self):
+        self._reused_ticker_rows()
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute("INSERT INTO price_repairs VALUES ('BNY', '2026-01-08', 'gap+truncated', 2)")
+        repaired, calls = self._run([
+            FakeResponse({"results": []}),               # split feed
+            FakeResponse({"results": []}),               # OLD flip refetch: nothing
+        ])
+        self.assertNotIn("BNY", repaired)
+        self.assertFalse(any("/ticker/BNY/" in url for url in calls))
+        self.assertEqual([d for d, _ in self._closes("BNY")], ["2026-01-05", "2026-01-06"])
+        with sqlite3.connect(self.db_path) as conn:
+            floor = conn.execute("SELECT floor_date FROM history_floors WHERE ticker='BNY'").fetchone()[0]
+        self.assertEqual(floor, "2026-01-05")
+
     def test_failed_split_repair_keeps_data_and_checkpoint(self):
         repaired, _ = self._run([
             FakeResponse({"results": [{"ticker": "KEEP", "execution_date": "2026-01-05"}]}),

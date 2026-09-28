@@ -13,6 +13,7 @@ from jinja2 import Template
 from dotenv import load_dotenv
 
 from industry_report import generate_industry_html as render_industry_page
+from ranking import ISOLATED_STALL_MAX, STALL_SESSIONS, STALL_WINDOW
 
 # --- Local Imports ---
 try:
@@ -289,8 +290,13 @@ class ReportService:
     # ------------------------------------------------------------------
     # 3. HTML Generation
     # ------------------------------------------------------------------
-    def generate_html(self, top_picks: dict[str, pd.DataFrame], target_dates: dict, run_date: date) -> str:
+    def generate_html(
+        self, top_picks: dict[str, pd.DataFrame], target_dates: dict, run_date: date,
+        stall_context: dict[str, dict] | None = None,
+    ) -> str:
+        """stall_context maps cohort -> RankingService.flag_stalls context."""
         print("🎨 Rendering HTML Report...")
+        stall_context = stall_context or {}
         
         voo_stats = self._get_voo_stats(target_dates)
         universe_changes = self._get_universe_changes(run_date)
@@ -319,7 +325,8 @@ class ReportService:
             dropped_stats = self._get_dropped_stats(dropped_list, target_dates)
             
             summary_html, cards_html = self._render_cohort(
-                enriched_df, dropped_stats, cohort, anchors=anchors, card_tickers=card_tickers
+                enriched_df, dropped_stats, cohort, anchors=anchors, card_tickers=card_tickers,
+                stall_context=stall_context.get(cohort),
             )
             sections[cohort] = {"summary": summary_html, "cards": cards_html}
 
@@ -410,16 +417,57 @@ class ReportService:
             
         return enriched
 
+    @staticmethod
+    def _render_stall_badge(stock: dict) -> str:
+        kind = stock.get("stall")
+        if kind not in ("isolated", "broad"):
+            return ""
+        days = int(stock["stall_sessions"])
+        tip = f"No new {STALL_WINDOW}-session closing high in {days} sessions"
+        if kind == "isolated":
+            return f" <span title='{tip}' style='color:#c42020; font-weight:bold;'>⏸ isolated stall {days}d</span>"
+        return f" <span title='{tip}; many leaders stalled' style='color:#999;'>⏸ stalled {days}d</span>"
+
+    @staticmethod
+    def _render_stall_summary(context: dict) -> str:
+        n, of = len(context["stalled"]), context["measured"]
+        names = f" ({', '.join(context['stalled'])})" if n else ""
+        head = (
+            f"<strong>Stall check:</strong> {n} of the top {of} by 12M return have no new "
+            f"{STALL_WINDOW}-day high in {STALL_SESSIONS}+ sessions{names}"
+        )
+        if n == 0:
+            note = ""
+        elif context["isolated"]:
+            swaps = [f"{out} → {inn}" if inn else f"{out} → (no replacement)" for out, inn in context["swaps"]]
+            note = (
+                f" — <span style='color:#c42020;'>isolated</span>. "
+                + (f"Isolated-stall rule would swap {', '.join(swaps)}." if swaps else "No top-5 name affected.")
+            )
+        else:
+            note = (
+                f" — broad (more than {ISOLATED_STALL_MAX}): likely a market pullback; "
+                "stalls have not been a sell signal in these conditions."
+            )
+        return (
+            "<div style='margin-bottom:10px; padding:6px 8px; background:#fafafa; border:1px solid #eee; "
+            f"border-radius:4px; color:#555; font-size:0.85em;'>{head}{note}</div>"
+        )
+
     def _render_cohort(
         self, stocks: list[dict], dropped_stats: list[dict], cohort: str,
         anchors: dict | None = None, card_tickers: set | None = None,
+        stall_context: dict | None = None,
     ) -> tuple[str, str]:
         """anchors maps ticker -> card id to link to (default: this cohort's own cards).
-        card_tickers limits which stocks get a card here (None = all)."""
+        card_tickers limits which stocks get a card here (None = all).
+        stall_context (from RankingService.flag_stalls) adds the stall summary line."""
         if anchors is None:
             anchors = {s["ticker"]: f"{cohort}-{s['ticker']}" for s in stocks}
         # 1. Active Summary
         summary_lines = []
+        if stall_context:
+            summary_lines.append(self._render_stall_summary(stall_context))
         for i, s in enumerate(stocks):
             # Top 5 historically outperform the bottom 5 in the index momentum sets
             if cohort in {"sp500", "sp400", "rankmom500", "rankmom400"} and i == 5:
@@ -472,6 +520,7 @@ class ReportService:
                 if w_ret != 'N/A' and not w_ret.startswith("-") and not w_ret.startswith("+"): w_ret = f"+{w_ret}"
                 ret_color = "#c42020" if "-" in w_ret else "#006400"
                 extra_info = f"{s.get('current_return','')} 12M, <span style='color:{ret_color}'>{w_ret}</span> 1W"
+                extra_info += self._render_stall_badge(s)
 
             line = f"""
                 <div style="margin-bottom: 4px;">

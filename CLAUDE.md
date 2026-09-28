@@ -34,7 +34,7 @@ These are integration-style scripts, not unit tests — they hit the live DB and
 ```bash
 python test_prices.py       # Tests date resolution and Polygon fetching
 python test_ranking.py      # Tests full ranking pipeline for all 3 momentum cohorts
-python -m unittest test_munger400_unit.py test_industry.py test_megacap_laggards.py test_rank_momentum.py  # Offline unit coverage
+python -m unittest test_munger400_unit.py test_industry.py test_megacap_laggards.py test_rank_momentum.py test_stall_flags.py  # Offline unit coverage
 ```
 
 ---
@@ -56,6 +56,7 @@ universe.py → prices.py → ranking.py → report.py → build_site.py
 **Momentum Engine** (cohorts: `megacap`, `sp500`, `sp400`):
 - Ranks by 12-month return, filtered to stocks where rank is improving or steady vs. last month
 - Picks Top 5 per cohort
+- SP500 stall flag (report-only): a pick with no new 60-session closing high in 15+ sessions is flagged. If at most 3 of the unfiltered top 10 by 12-month return are stalled the stall is "isolated" (red badge; the summary line names the swap to the next unstalled pick below the top 5); otherwise it is "broad" (grey badge; treated as a market pullback, not a sell signal). `ensure_recent_sessions()` fills the last 60 sessions with grouped daily calls first, since runs otherwise only cache the dates they rank on
 
 **Mega Cap Laggards** (cohort: `megalaggards`, report-only):
 - Takes the 10 largest S&P 500 names by SPY weight (from `megacap.csv`) and ranks them by 3-, 6- and 12-month return
@@ -93,7 +94,7 @@ universe.py → prices.py → ranking.py → report.py → build_site.py
 
 **Polygon free tier rate limiting**: All Polygon requests in `PriceService` pass through one shared 13-second throttle. Broad SP400 history gaps use grouped-daily calls; isolated gaps use ticker-range calls.
 
-**Split repair**: Polygon's `adjusted=true` is relative to fetch time, so rows cached before a split are never restated. Each run, `repair_split_adjustments()` checks Polygon's splits feed since the `sync_state.splits_checked_through` checkpoint, plus local scans for flip-flopping price scales and level jumps across data holes, and replaces each affected ticker's full 2-year history in one transaction. If Polygon's own series has a break (a reused ticker such as BNY), rows before it are dropped. Repairs are logged in `price_repairs`.
+**Split repair**: Polygon's `adjusted=true` is relative to fetch time, so rows cached before a split are never restated. Each run, `repair_split_adjustments()` checks Polygon's splits feed since the `sync_state.splits_checked_through` checkpoint, plus local scans for flip-flopping price scales and level jumps across data holes, and replaces each affected ticker's full 2-year history in one transaction. If Polygon's own series has a break (a reused ticker such as BNY), rows before it are dropped and the break date is stored in `history_floors`; grouped snapshots and backfills never write rows below a ticker's floor (otherwise snapshots of 12/13-month-old dates restore the old security). Repairs are logged in `price_repairs`.
 
 **Chart data must be pre-heated**: `chart_module.py` reads strictly from SQLite — it never calls the API. `run_report.py` calls `ensure_history_depth()` for all winners before generating reports to guarantee chart data is available.
 

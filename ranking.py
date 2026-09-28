@@ -12,6 +12,65 @@ from sic import UNCLASSIFIED_SIC2, industry_name, load_sic_major_groups, sic2_fr
 DB_PATH = Path("data/market_data.sqlite")
 RANK_MOMENTUM_COHORTS = {"rankmom500": "sp500", "rankmom400": "sp400"}
 
+# Stall flag (SP500 leaders): a stock with no new closing high in the last
+# STALL_WINDOW sessions for more than STALL_SESSIONS sessions has stalled. In a
+# two-year S&P 500 backtest, a stall shared by few of the top 10 (unfiltered
+# 12M return) lagged the other leaders and swapping it out on report days helped;
+# stalls shared by many leaders were market dips and were not a sell signal.
+STALL_COHORTS = {"sp500"}
+STALL_WINDOW = 60
+STALL_SESSIONS = 15
+ISOLATED_STALL_MAX = 3
+
+
+def sessions_since_high(closes: pd.DataFrame, minimum_coverage: float = 0.90) -> pd.Series:
+    """
+    closes: session-indexed (ascending) closes, one column per ticker, covering
+    the stall window. Returns sessions since each ticker's highest close; NaN when
+    the latest close is missing or fewer than minimum_coverage of sessions exist.
+    """
+    minimum = math.ceil(len(closes) * minimum_coverage)
+    out = {}
+    for ticker in closes.columns:
+        series = closes[ticker]
+        if pd.isna(series.iloc[-1]) or series.notna().sum() < minimum:
+            out[ticker] = np.nan
+            continue
+        values = series.to_numpy()
+        out[ticker] = len(values) - 1 - int(np.nanargmax(values))
+    return pd.Series(out, dtype=float)
+
+
+def assess_stalls(
+    picks: List[str], top10: List[str], since_high: pd.Series, pick_count: int = 5
+) -> tuple[dict, dict]:
+    """
+    Classify stalled picks as 'isolated' (at most ISOLATED_STALL_MAX of the
+    top 10 stalled) or 'broad'. Returns ({ticker: (sessions, kind)}, context);
+    context lists the stalled top-10 names and, when isolated, the swaps the
+    rule would make (stalled top-5 pick -> next unstalled pick below the top 5).
+    """
+    stalled = lambda t: since_high.get(t, np.nan) > STALL_SESSIONS
+    measured = [t for t in top10 if pd.notna(since_high.get(t, np.nan))]
+    stalled_top10 = [t for t in measured if stalled(t)]
+    isolated = len(stalled_top10) <= ISOLATED_STALL_MAX
+    kind = "isolated" if isolated else "broad"
+
+    flags = {t: (int(since_high[t]), kind) for t in picks if stalled(t)}
+    swaps = []
+    if isolated:
+        bench = [t for t in picks[pick_count:] if not stalled(t)]
+        for t in picks[:pick_count]:
+            if stalled(t):
+                swaps.append((t, bench.pop(0) if bench else None))
+    context = {
+        "stalled": stalled_top10,
+        "measured": len(measured),
+        "isolated": isolated,
+        "swaps": swaps,
+    }
+    return flags, context
+
 class RankingService:
     def __init__(self, db_path: Path = DB_PATH):
         self.db_path = db_path
@@ -565,6 +624,71 @@ class RankingService:
             })
 
         return pd.DataFrame(signals)
+
+    def flag_stalls(
+        self, picks_df: pd.DataFrame, ranked_all: pd.DataFrame, as_of_date: date
+    ) -> tuple[pd.DataFrame, dict]:
+        """
+        Add stall_sessions / stall ('isolated', 'broad' or '') columns to a
+        momentum cohort's picks. ranked_all is the cohort's unfiltered ranking
+        (require_improving=False); its top 10 sets the stall breadth.
+        """
+        if picks_df.empty:
+            return picks_df, {}
+        picks = picks_df["ticker"].tolist()
+        top10 = ranked_all.head(10).index.tolist()
+        tickers = sorted(set(picks) | set(top10))
+
+        as_of = pd.Timestamp(as_of_date).date().isoformat()
+        placeholders = ",".join(["?"] * len(tickers))
+        with sqlite3.connect(self.db_path) as conn:
+            market_dates = [
+                row[0]
+                for row in conn.execute(
+                    """
+                    SELECT date
+                    FROM daily_prices
+                    WHERE ticker = 'VOO' AND date <= ?
+                    ORDER BY date DESC
+                    LIMIT ?
+                    """,
+                    (as_of, STALL_WINDOW),
+                ).fetchall()
+            ][::-1]
+            date_placeholders = ",".join(["?"] * len(market_dates))
+            prices = pd.read_sql_query(
+                f"""
+                SELECT ticker, date, close
+                FROM daily_prices
+                WHERE ticker IN ({placeholders}) AND date IN ({date_placeholders})
+                """,
+                conn,
+                params=tickers + market_dates,
+            )
+
+        if len(market_dates) < STALL_WINDOW or prices.empty:
+            print(f"   ⚠️ Stall check skipped: only {len(market_dates)} market sessions cached.")
+            return picks_df, {}
+
+        closes = (
+            prices.drop_duplicates(["ticker", "date"])
+            .pivot(index="date", columns="ticker", values="close")
+            .reindex(index=market_dates, columns=tickers)
+        )
+        since_high = sessions_since_high(closes)
+        unmeasured = sorted(since_high[since_high.isna()].index)
+        if unmeasured:
+            print(f"   ⚠️ Stall check: not enough recent history for {unmeasured}")
+
+        flags, context = assess_stalls(picks, top10, since_high)
+        out = picks_df.copy()
+        out["stall_sessions"] = [flags[t][0] if t in flags else None for t in picks]
+        out["stall"] = [flags[t][1] if t in flags else "" for t in picks]
+        print(
+            f"   ⏸ Stalls: {len(context['stalled'])}/{context['measured']} of the top 10 "
+            f"({'isolated' if context['isolated'] else 'broad'}); flagged {sorted(flags) or 'none'}"
+        )
+        return out, context
 
     def extract_top_picks(self, ranked_df: pd.DataFrame, cohort: str, run_date: date) -> pd.DataFrame:
         """

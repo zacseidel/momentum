@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 # Local Modules
 from universe import UniverseService
 from prices import PriceService
-from ranking import RANK_MOMENTUM_COHORTS, RankingService
+from ranking import RANK_MOMENTUM_COHORTS, STALL_COHORTS, STALL_WINDOW, RankingService
 from report import ReportService
 from build_site import build_website
 from metadata_refresh import (
@@ -191,6 +191,17 @@ async def build_report(run_date: date):
         list(set(all_winners)), days_needed=365, min_rows=180
     )
 
+    # --- D2. Stall flags (no new 60-session high) for momentum leaders ---
+    print("⏸  Checking leaders for stalls...")
+    await p_service.ensure_recent_sessions(latest_trading_date, STALL_WINDOW)
+    stall_context = {}
+    for cohort in STALL_COHORTS:
+        _, prices_df = cohort_prices[cohort]
+        unfiltered = r_service.calculate_ranks(prices_df, target_dates, require_improving=False)
+        top_picks[cohort], stall_context[cohort] = r_service.flag_stalls(
+            top_picks[cohort], unfiltered, latest_trading_date
+        )
+
     # 5. Momentum Report (Main HTML)
     print("📝 Generating Momentum HTML...")
     
@@ -198,7 +209,9 @@ async def build_report(run_date: date):
     await rep_service.cache_metadata(list(set(all_winners)))
     
     # Generate Main Report
-    momentum_html = rep_service.generate_html(top_picks, target_dates, run_date)
+    momentum_html = rep_service.generate_html(
+        top_picks, target_dates, run_date, stall_context=stall_context
+    )
     mom_file = REPORT_DIR / f"momentum_{run_date.isoformat()}.html"
     mom_file.write_text(momentum_html, encoding="utf-8")
     
