@@ -1291,3 +1291,12 @@ date,cohort,action,symbol
 2026-10-02,sp500,add,VYLR
 2026-10-02,megacap,add,AMAT
 2026-10-02,megacap,drop,COST
+2026-10-06,sp500,add,SKYD
+2026-10-06,sp500,add,TWLO
+2026-10-06,sp500,drop,WBD
+2026-10-06,sp500,drop,PSKY
+2026-10-06,sp500,drop,CTVA
+2026-10-06,megacap,add,COST
+2026-10-06,megacap,drop,CVX
+2026-10-06,munger,add,LIN
+2026-10-06,munger,drop,AMGN
