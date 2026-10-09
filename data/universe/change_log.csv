@@ -1300,3 +1300,9 @@ date,cohort,action,symbol
 2026-10-06,megacap,drop,CVX
 2026-10-06,munger,add,LIN
 2026-10-06,munger,drop,AMGN
+2026-10-09,sp400,add,FORM
+2026-10-09,sp400,add,CTVA
+2026-10-09,sp400,drop,OLN
+2026-10-09,sp400,drop,TWLO
+2026-10-09,megacap,add,CVX
+2026-10-09,megacap,drop,LRCX
