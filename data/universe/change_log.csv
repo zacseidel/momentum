@@ -1325,3 +1325,10 @@ date,cohort,action,symbol
 2026-11-03,munger,add,GILD
 2026-11-03,munger,drop,KLAC
 2026-11-03,munger,drop,ORCL
+2026-11-06,sp500,add,OKTA
+2026-11-06,sp400,add,GKOS
+2026-11-06,sp400,drop,OKTA
+2026-11-06,megacap,add,MRK
+2026-11-06,megacap,drop,PLTR
+2026-11-06,munger,add,ORCL
+2026-11-06,munger,drop,C
