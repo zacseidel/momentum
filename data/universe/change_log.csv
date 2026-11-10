@@ -1332,3 +1332,9 @@ date,cohort,action,symbol
 2026-11-06,megacap,drop,PLTR
 2026-11-06,munger,add,ORCL
 2026-11-06,munger,drop,C
+2026-11-10,sp400,add,TXCP
+2026-11-10,sp400,add,FOXA
+2026-11-10,sp400,drop,TCBI
+2026-11-10,sp400,drop,ROKU
+2026-11-10,megacap,add,PLTR
+2026-11-10,megacap,drop,MRK
