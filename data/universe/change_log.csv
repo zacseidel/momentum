@@ -1338,3 +1338,6 @@ date,cohort,action,symbol
 2026-11-10,sp400,drop,ROKU
 2026-11-10,megacap,add,PLTR
 2026-11-10,megacap,drop,MRK
+2026-11-13,sp400,drop,FOXA
+2026-11-13,munger,add,ANET
+2026-11-13,munger,drop,GILD
