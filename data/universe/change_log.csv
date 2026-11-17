@@ -1341,3 +1341,13 @@ date,cohort,action,symbol
 2026-11-13,sp400,drop,FOXA
 2026-11-13,munger,add,ANET
 2026-11-13,munger,drop,GILD
+2026-11-17,sp400,add,HZN
+2026-11-17,sp400,drop,WFRD
+2026-11-17,sp400,drop,BKH
+2026-11-17,sp400,drop,NWE
+2026-11-17,megacap,add,UNH
+2026-11-17,megacap,drop,PLTR
+2026-11-17,munger,add,GILD
+2026-11-17,munger,add,DIS
+2026-11-17,munger,drop,GEV
+2026-11-17,munger,drop,ANET
